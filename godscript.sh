@@ -319,6 +319,7 @@ enable_monitor_mode() {
 disable_monitor_mode() {
     local iface=$1
     
+    # Check if interface variable has a value before proceeding
     if [[ -z "$INTERFACE" ]]; then
         print_warning "No interface currently in monitor mode"
         return 0
@@ -691,10 +692,17 @@ main_menu() {
                 # Check if interface is selected, if not prompt user to select one
                 if [[ -z "$SELECTED_IFACE" ]]; then
                     print_warning "No interface currently selected. Please select an interface first."
-                    read -p "Press Enter to continue after selecting an interface: " dummy
                     
                     # Call select_target_interface to properly capture and validate user input
                     select_target_interface || true
+                    
+                    # Verify interface was successfully selected before proceeding
+                    if [[ -n "$SELECTED_IFACE" && "$SELECTED_IFACE" != *"mon"* ]]; then
+                        print_success "Interface $SELECTED_IFACE ready for monitor mode activation."
+                    else
+                        print_error "Failed to select valid interface. Please try again."
+                        continue
+                    fi
                 fi
                 
                 # Enable monitor mode on the selected interface
@@ -781,4 +789,56 @@ main_menu() {
                     echo "10c. Exit Tools Menu"
                     echo ""
                     
-                    read -p "Select tool [10a-10```
+                    read -p "Select tool [10a-10c]: " tool_choice
+                    
+                    case $tool_choice in
+                        10a)
+                            wifi_pineapple_ssh "$BSSID"
+                            ;;
+                        10b)
+                            flipper_zero_sync "$INTERFACE"
+                            ;;
+                        10c)
+                            echo ""
+                            set_color RESET
+                            reset_bold
+                            break
+                            ;;
+                    esac
+                    
+                fi
+                ;;
+                
+            11)
+                print_success "Exiting GODSCRIPT..."
+                exit 0
+                ;;
+                
+            *)
+                print_error "Invalid option. Please select a number between 1 and 11."
+                ;;
+        esac
+        
+    done
+}
+
+# =============================================================================
+# SCRIPT ENTRY POINT
+# =============================================================================
+
+main() {
+    echo ""
+    show_banner
+    
+    # Check for root access first
+    check_root_access || exit 1
+    
+    # Create captures directory if it doesn't exist
+    create_captures_dir
+    
+    # Start main menu loop
+    main_menu
+}
+
+# Run the script
+main "$@"
