@@ -65,7 +65,7 @@ class BusinessAgent:
         try:
             log_file = self.vault_dir / "audit.log"
             with open(log_file, "a") as f:
-                f.write(f"[{datetime.now().isoformat()}] {str(audit_data)}\\n")
+                f.write(f"[{datetime.now().isoformat()}] {str(audit_data)}\n")
             return True
         except Exception as e:
             logging.error(f"Audit save error: {str(e)}")
@@ -75,6 +75,20 @@ class BusinessAgent:
         """Register a new business client"""
         
         try:
+            # Input validation
+            if not client_id or not isinstance(client_id, str):
+                logging.warning(f"Invalid client_id provided")
+                return False
+            
+            if not name or not isinstance(name, str):
+                logging.warning(f"Invalid client name provided")
+                return False
+            
+            if not service_type or not isinstance(service_type, str):
+                logging.warning(f"Invalid service_type provided")
+                return False
+
+            # Check for duplicate client_id
             if client_id in self.financial_data:
                 logging.warning(f"Client {client_id} already exists")
                 return False
@@ -99,8 +113,21 @@ class BusinessAgent:
         """Update client revenue"""
         
         try:
+            if not isinstance(client_id, str):
+                logging.warning(f"Invalid client_id type provided")
+                return False
+            
+            if not isinstance(amount, (int, float)):
+                logging.warning(f"Invalid amount type provided")
+                return False
+
             if client_id not in self.financial_data:
                 logging.warning(f"Client {client_id} not found")
+                return False
+            
+            # Validate amount is positive
+            if amount < 0:
+                logging.warning(f"Negative revenue amount for client {client_id}")
                 return False
             
             self.financial_data[client_id]["revenue"] += amount
@@ -166,6 +193,9 @@ class BusinessAgent:
         """Get payment status for a specific client"""
         
         try:
+            if not isinstance(client_id, str):
+                return {"error": "Invalid client_id type"}
+            
             if client_id not in self.financial_data:
                 return {"error": "Client not found"}
             

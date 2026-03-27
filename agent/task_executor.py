@@ -32,7 +32,7 @@ class TaskExecutor:
             agent_instance = agent_class()
             
             # Execute the method
-            result = getattr(agent_instance, info["method"])()
+            result = getattr(agent_instance, info["method"])(**info.get("kwargs", {}))
             
             return {
                 "status": "success", 
