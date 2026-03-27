@@ -332,10 +332,11 @@ disable_monitor_mode() {
     
     print_header "Disabling Monitor Mode on $INTERFACE"
     
-    sudo airmon-ng stop "$INTERFACE" || true
+    # Use the passed iface parameter for the stop command, not INTERFACE variable
+    sudo airmon-ng stop "$iface" || true
     
     # Clean up any remaining processes
-    kill_conflicting_processes "$INTERFACE" || true
+    kill_conflicting_processes "$iface" || true
     
     # Revert variables back to original interface name
     SELECTED_IFACE="$original_iface"
