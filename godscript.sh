@@ -258,7 +258,7 @@ select_target_interface() {
         return 1
     fi
     
-    # Store the selected interface in global variable
+    # Store the selected interface in global variable (without mon suffix)
     SELECTED_IFACE="$user_input"
     
     print_success "Selected interface: $SELECTED_IFACE"
@@ -306,8 +306,8 @@ enable_monitor_mode() {
         # Update SELECTED_IFACE to include the 'mon' suffix for compatibility with scan and deauth operations
         SELECTED_IFACE="${iface}mon"
         
-        # Also update INTERFACE variable so it's available in other menu options
-        INTERFACE="$SELECTED_IFACE"
+        # Keep INTERFACE as original interface name (without mon suffix) for consistency
+        # This ensures disable_monitor_mode receives the correct parameter
         
         return 0
     else
@@ -338,7 +338,7 @@ disable_monitor_mode() {
     # Clean up any remaining processes
     kill_conflicting_processes "$iface" || true
     
-    # Revert variables back to original interface name
+    # Revert variables back to original interface name (without mon suffix)
     SELECTED_IFACE="$original_iface"
     INTERFACE="$original_iface"
     
