@@ -322,6 +322,8 @@ disable_monitor_mode() {
     # Check if interface variable has a value before proceeding
     if [[ -z "$INTERFACE" ]]; then
         print_warning "No interface currently in monitor mode. Please enable monitor mode first."
+        echo ""
+        echo "To enable monitor mode, select option 3 from the main menu and follow the prompts."
         return 0
     fi
     
