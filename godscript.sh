@@ -111,6 +111,7 @@ DURATION="30s"
 OUTPUT_FILE=""
 CAPTURES_DIR="./captures"
 GRINGO_VERSION="2.0"
+SELECTED_IFACE=""
 
 # =============================================================================
 # UTILITY FUNCTIONS
@@ -234,6 +235,35 @@ kill_conflicting_processes() {
     print_success "No conflicting processes found on $iface"
 }
 
+select_target_interface() {
+    print_header "Select Target Interface"
+    
+    list_interfaces
+    
+    echo ""
+    read -p "Enter interface name (e.g., wlan0): " user_input
+    
+    # Validate input is not empty and matches expected format
+    if [[ -z "$user_input" ]]; then
+        print_error "Interface name cannot be empty. Please try again."
+        return 1
+    fi
+    
+    # Check if the interface exists
+    local iface_exists=$(ip link show "$user_input" &>/dev/null)
+    
+    if [[ $? -ne 0 ]]; then
+        print_error "Interface '$user_input' not found. Available interfaces:"
+        list_interfaces
+        return 1
+    fi
+    
+    # Store the selected interface in global variable
+    SELECTED_IFACE="$user_input"
+    
+    print_success "Selected interface: $SELECTED_IFACE"
+}
+
 enable_monitor_mode() {
     local iface=$1
     
@@ -248,10 +278,16 @@ enable_monitor_mode() {
     # Kill conflicting processes first
     kill_conflicting_processes "$iface" || true
     
-    # Try to enable monitor mode using airmon-ng
+    # Try to enable monitor mode using airmon-ng with sudo
     print_warning "Attempting to enable monitor mode..."
     
-    if ! airmon-ng start "$iface"; then
+    if ! sudo airmon-ng check kill; then
+        print_error "Failed to run airmon-ng check kill. Please ensure root access."
+        return 1
+    fi
+    
+    # Run the actual command with sudo
+    if ! sudo airmon-ng start "$iface"; then
         print_error "Failed to enable monitor mode automatically"
         echo ""
         echo "Manual attempt:"
@@ -266,8 +302,9 @@ enable_monitor_mode() {
     
     if [[ "$status" == *"monitor"* ]]; then
         print_success "Monitor mode enabled successfully on $iface"
-        INTERFACE="$iface"
-        MONITOR_MODE=true
+        
+        # Update SELECTED_IFACE to include the 'mon' suffix for compatibility with scan and deauth operations
+        SELECTED_IFACE="${iface}mon"
         return 0
     else
         print_error "Interface is not in monitor mode: $status"
@@ -285,7 +322,7 @@ disable_monitor_mode() {
     
     print_header "Disabling Monitor Mode on $INTERFACE"
     
-    airmon-ng stop "$INTERFACE" || true
+    sudo airmon-ng stop "$INTERFACE" || true
     
     # Clean up any remaining processes
     kill_conflicting_processes "$INTERFACE" || true
@@ -321,14 +358,14 @@ run_airodump_scan() {
         args+=("-t" "$duration")
     fi
     
-    # Run airodump-ng
+    # Run airodump-ng with sudo for better permissions
     print_success "Executing: airodump-ng ${args[*]}"
     
     echo ""
     echo "Press Ctrl+C to stop scan..."
     echo ""
     
-    airodump-ng "${args[@]}" &
+    sudo airodump-ng "${args[@]}" &
     local scan_pid=$!
     
     while kill -0 $scan_pid 2>/dev/null; do
@@ -354,7 +391,7 @@ run_wps_scan() {
     echo "Press Ctrl+C to stop scan..."
     echo ""
     
-    wps_scan --channel $CHANNEL &
+    sudo wps_scan --channel $CHANNEL &
     local scan_pid=$!
     
     while kill -0 $scan_pid 2>/dev/null; do
@@ -383,7 +420,7 @@ run_deauth_attack() {
         return 1
     fi
     
-    # Build command arguments for aireplay-ng -0
+    # Build command arguments for aireplay-ng -0 with sudo
     local args=("-0" "-a" "$target_bssid" "-c" "$count")
     
     if [[ -n "$target_mac" ]]; then
@@ -398,8 +435,8 @@ run_deauth_attack() {
     
     print_success "Executing: aireplay-ng -0 ${args[*]}"
     
-    # Run deauth attack with -0 flag for deauthentication packets
-    aireplay-ng "${args[@]}" &
+    # Run deauth attack with sudo for better permissions
+    sudo aireplay-ng "${args[@]}" &
     local attack_pid=$!
     
     while kill -0 $attack_pid 2>/dev/null; do
@@ -425,8 +462,8 @@ run_deauth_attack_all_clients() {
     echo "Press Ctrl+C to stop attack..."
     echo ""
     
-    # Run deauth attack targeting all clients with -0 flag
-    aireplay-ng --deauthtx -a "$BSSID" &
+    # Run deauth attack targeting all clients with sudo
+    sudo aireplay-ng --deauthtx -a "$BSSID" &
     local attack_pid=$!
     
     while kill -0 $attack_pid 2>/dev/null; do
@@ -473,7 +510,7 @@ capture_handshake() {
     echo "Press Ctrl+C to stop capture..."
     echo ""
     
-    airodump-ng "${args[@]}" &
+    sudo airodump-ng "${args[@]}" &
     local capture_pid=$!
     
     while kill -0 $capture_pid 2>/dev/null; do
@@ -640,12 +677,14 @@ main_menu() {
                 ;;
                 
             3)
-                if [[ -z "$INTERFACE" ]]; then
-                    print_warning "No interface selected. Please select an interface from the list."
-                else
-                    enable_monitor_mode "$INTERFACE"
+                # Check if interface is selected, if not prompt user to select one
+                if [[ -z "$SELECTED_IFACE" ]]; then
+                    print_warning "No interface currently selected. Please select an interface first."
+                    read -p "Press Enter to continue after selecting an interface: " dummy
                 fi
-                ;;
+                
+                # Enable monitor mode on the selected interface
+                enable_monitor_mode "$SELECTED_IFACE"
                 
             4)
                 disable_monitor_mode "$INTERFACE"
