@@ -305,6 +305,10 @@ enable_monitor_mode() {
         
         # Update SELECTED_IFACE to include the 'mon' suffix for compatibility with scan and deauth operations
         SELECTED_IFACE="${iface}mon"
+        
+        # Also update INTERFACE variable so it's available in other menu options
+        INTERFACE="$SELECTED_IFACE"
+        
         return 0
     else
         print_error "Interface is not in monitor mode: $status"
@@ -767,62 +771,4 @@ main_menu() {
                     echo "10c. Exit Tools Menu"
                     echo ""
                     
-                    read -p "Select tool [10a-10c]: " tool_choice
-                    
-                    case $tool_choice in
-                        10a)
-                            wifi_pineapple_ssh "$INTERFACE"
-                            ;;
-                        10b)
-                            flipper_zero_sync "$INTERFACE"
-                            ;;
-                        10c)
-                            echo ""
-                            set_color RESET
-                            break
-                            ;;
-                        *)
-                            print_error "Invalid tool selection."
-                            ;;
-                    esac
-                    
-                    echo ""
-                fi
-                ;;
-                
-            11)
-                print_success "Exiting Godscript..."
-                exit 0
-                ;;
-                
-            *)
-                print_error "Invalid option. Please select a number between 1 and 11."
-                ;;
-        esac
-        
-        echo ""
-    done
-}
-
-# =============================================================================
-# SCRIPT ENTRY POINT
-# =============================================================================
-
-main() {
-    # Check for root access first
-    check_root_access
-    
-    # Check dependencies
-    check_dependencies || true
-    
-    # Create captures directory
-    create_captures_dir
-    
-    # Start main menu loop
-    main_menu
-}
-
-# Run the script if executed directly
-if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
-    main "$@"
-fi
+                    read -p "Select tool [10a-10
