@@ -324,6 +324,9 @@ disable_monitor_mode() {
         return 0
     fi
     
+    # Store original interface name before disabling (for reverting)
+    local original_iface=$(echo "$iface" | sed 's/mon$//')
+    
     print_header "Disabling Monitor Mode on $INTERFACE"
     
     sudo airmon-ng stop "$INTERFACE" || true
@@ -331,7 +334,11 @@ disable_monitor_mode() {
     # Clean up any remaining processes
     kill_conflicting_processes "$INTERFACE" || true
     
-    print_success "Monitor mode disabled on $INTERFACE"
+    # Revert variables back to original interface name
+    SELECTED_IFACE="$original_iface"
+    INTERFACE="$original_iface"
+    
+    print_success "Monitor mode disabled on $INTERFACE (reverted to: $original_iface)"
 }
 
 # =============================================================================
@@ -685,6 +692,9 @@ main_menu() {
                 if [[ -z "$SELECTED_IFACE" ]]; then
                     print_warning "No interface currently selected. Please select an interface first."
                     read -p "Press Enter to continue after selecting an interface: " dummy
+                    
+                    # Call select_target_interface to properly capture and validate user input
+                    select_target_interface || true
                 fi
                 
                 # Enable monitor mode on the selected interface
@@ -771,4 +781,4 @@ main_menu() {
                     echo "10c. Exit Tools Menu"
                     echo ""
                     
-                    read -p "Select tool [10a-10
+                    read -p "Select tool [10a-10```
