@@ -5,16 +5,83 @@
 # A comprehensive, menu-driven Bash script for wireless security testing
 # =============================================================================
 
-# Colors for output
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-BLUE='\033[0;34m'
-NC='\033[0m' # No Color
+# =============================================================================
+# TERMINAL STYLING (tput)
+# =============================================================================
+
+set_color() {
+    local color=$1
+    case $color in
+        RED)     tput setaf 1 ;;
+        GREEN)   tput setaf 2 ;;
+        YELLOW)  tput setaf 3 ;;
+        BLUE)    tput setaf 4 ;;
+        MAGENTA) tput setaf 5 ;;
+        CYAN)    tput setaf 6 ;;
+        WHITE)   tput setaf 7 ;;
+        RESET)   tput sgr0 ;;
+    esac
+}
+
+# =============================================================================
+# GRINGO ASCII BANNER
+# =============================================================================
+
+show_banner() {
+    echo ""
+    echo "                                                                                   "
+    echo "                                                                                   "
+    echo "                                                                                   "
+    echo "  _____ _   _ _____ _______ ____  __     ___  ___________                       "
+    echo " |  ___| | | |_   _|__  __/ ___||  \   / _ \|_   _|_______|                      "
+    echo " | |_  | |_| | | |    \ \/ /\___| | | | (_) | | |      __"
+    echo " |  _| |  _  | | |     >  <      | | | |_| | | |    / ___|"
+    echo " | |   | | | | | |    /  \\ \_____| | |\__  || | |   /_/   "
+    echo " |_|   |_| |_|___|   /_/\\_\\       |_| |____||_| |____/     "
+    echo ""
+    echo "                                                                                   "
+    echo "                    GRINGO WIRELESS RECONNAISSANCE TOOL                         "
+    echo "                    Version 2.0 - Professional Red-Team Edition                  "
+    echo "                                                                                   "
+    echo "                                                                                   "
+}
+
+# =============================================================================
+# COLOR FUNCTIONS (tput)
+# =============================================================================
+
+print_header() {
+    set_color BLUE
+    echo ""
+    echo "================================================"
+    echo "$1"
+    echo "================================================"
+    echo ""
+    set_color RESET
+}
+
+print_success() {
+    set_color GREEN
+    echo "$1"
+    set_color RESET
+}
+
+print_warning() {
+    set_color YELLOW
+    echo "$1"
+    set_color RESET
+}
+
+print_error() {
+    set_color RED
+    echo "$1"
+    set_color RESET
+}
 
 # =============================================================================
 # GLOBAL VARIABLES
 # =============================================================================
+
 INTERFACE=""
 MONITOR_MODE=false
 SCAN_RESULTS=""
@@ -22,34 +89,13 @@ DEAUTH_TARGET=""
 CLIENT_MAC=""
 BSSID=""
 CHANNEL=6
-DURATION="10s"
+DURATION="30s"
 OUTPUT_FILE=""
+CAPTURES_DIR="./captures"
+GRINGO_VERSION="2.0"
 
 # =============================================================================
 # UTILITY FUNCTIONS
-# =============================================================================
-
-print_header() {
-    echo -e "${BLUE}================================================${NC}"
-    echo -e "${BLUE}$1${NC}"
-    echo -e "${BLUE}================================================${NC}"
-    echo ""
-}
-
-print_success() {
-    echo -e "${GREEN}$1${NC}"
-}
-
-print_warning() {
-    echo -e "${YELLOW}$1${NC}"
-}
-
-print_error() {
-    echo -e "${RED}$1${NC}"
-}
-
-# =============================================================================
-# ROOT AND PERMISSION CHECKS
 # =============================================================================
 
 check_root_access() {
@@ -108,6 +154,15 @@ check_dependencies() {
     print_success "All dependencies found ✓"
 }
 
+create_captures_dir() {
+    if [[ ! -d "$CAPTURES_DIR" ]]; then
+        mkdir -p "$CAPTURES_DIR"
+        print_success "Created captures directory: $CAPTURES_DIR"
+    else
+        print_warning "Captures directory already exists: $CAPTURES_DIR"
+    fi
+}
+
 # =============================================================================
 # INTERFACE MANAGEMENT
 # =============================================================================
@@ -131,6 +186,36 @@ list_interfaces() {
     echo ""
 }
 
+kill_conflicting_processes() {
+    local iface=$1
+    
+    print_header "Checking for Conflicting Processes on $iface"
+    
+    # Check for existing airmon-ng processes
+    if pgrep -f "airmon.*$iface" > /dev/null; then
+        print_warning "Found conflicting process: airmon-ng on $iface"
+        
+        # Kill the process
+        local pid=$(pgrep -f "airmon.*$iface")
+        kill -9 "$pid" 2>/dev/null
+        
+        print_success "Killed conflicting process (PID: $pid)"
+    fi
+    
+    # Check for monitor mode already enabled
+    if ip link show "$iface" | grep -qP 'mode \Kmonitor'; then
+        print_warning "$iface is already in monitor mode"
+        
+        # Stop airmon-ng if running
+        local pid=$(pgrep -f "airmon.*$iface")
+        kill -9 "$pid" 2>/dev/null
+        
+        return 0
+    fi
+    
+    print_success "No conflicting processes found on $iface"
+}
+
 enable_monitor_mode() {
     local iface=$1
     
@@ -141,6 +226,9 @@ enable_monitor_mode() {
         print_success "$iface is already in monitor mode"
         return 0
     fi
+    
+    # Kill conflicting processes first
+    kill_conflicting_processes "$iface" || true
     
     # Try to enable monitor mode using airmon-ng
     print_warning "Attempting to enable monitor mode..."
@@ -180,6 +268,9 @@ disable_monitor_mode() {
     print_header "Disabling Monitor Mode on $INTERFACE"
     
     airmon-ng stop "$INTERFACE" || true
+    
+    # Clean up any remaining processes
+    kill_conflicting_processes "$INTERFACE" || true
     
     print_success "Monitor mode disabled on $INTERFACE"
 }
@@ -358,10 +449,10 @@ wifi_pineapple_scan() {
     echo "  - pineapple_status function"
 }
 
-wifi_pineapple_deauth() {
+wifi_pineapple_ssh() {
     local target=$1
     
-    print_header "WiFi Pineapple Deauthentication Attack"
+    print_header "WiFi Pineapple SSH Connection"
     
     if [[ -z "$INTERFACE" ]]; then
         print_error "No interface in monitor mode. Please enable monitor mode first."
@@ -369,10 +460,10 @@ wifi_pineapple_deauth() {
     fi
     
     echo ""
-    print_warning "[PLACEHOLDER] WiFi Pineapple deauth attack not fully implemented"
+    print_warning "[PLACEHOLDER] WiFi Pineapple SSH connection not fully implemented"
     echo ""
     echo "To implement, add:"
-    echo "  pineapple_deauth <target_bssid>"
+    echo "  pineapple_ssh <target_ip>"
 }
 
 # =============================================================================
@@ -421,12 +512,33 @@ flipper_zero_deauth() {
     echo "  flipper_deauth <target_bssid>"
 }
 
+flipper_zero_sync() {
+    local device=$1
+    
+    print_header "Flipper Zero Sync"
+    
+    if [[ -z "$INTERFACE" ]]; then
+        print_warning "No interface in monitor mode. Please enable monitor mode first."
+    fi
+    
+    echo ""
+    print_warning "[PLACEHOLDER] Flipper Zero sync not fully implemented"
+    echo ""
+    echo "To implement, add:"
+    echo "  flipper_sync <device_id>"
+}
+
 # =============================================================================
 # MAIN MENU SYSTEM
 # =============================================================================
 
 show_menu() {
-    print_header "Wireless Reconnaissance Menu"
+    set_color BLUE
+    echo ""
+    echo "================================================"
+    echo "GRINGO WIRELESS RECONNAISSANCE TOOL v$GRINGO_VERSION"
+    echo "================================================"
+    echo ""
     
     echo "1. Check System Requirements (Root & Dependencies)"
     echo "2. List Available Interfaces"
@@ -440,6 +552,8 @@ show_menu() {
     echo "10. Flipper Zero Integration"
     echo "11. Exit"
     echo ""
+    
+    set_color RESET
 }
 
 main_menu() {
@@ -558,6 +672,9 @@ main() {
     
     # Check dependencies
     check_dependencies || true
+    
+    # Create captures directory
+    create_captures_dir
     
     # Start main menu loop
     main_menu
