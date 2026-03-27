@@ -2,12 +2,16 @@ from agent.base_agent import BaseAgent
 import requests
 import json
 from typing import Dict, Any
+from agent.config import config
 
 class IntelligenceAgent(BaseAgent):
     def __init__(self):
         # Using one of your verified local models from the earlier curl check
         super().__init__(model_id="qwen3.5-4b-claude-4.6-os-auto-variable-heretic-uncensored-thinking")
-
+        
+        # Load API keys for external services if configured
+        config.load_from_env()
+    
     def sync_brain(self) -> Dict[str, Any]:
         """Verify and synchronize with local LLM brain"""
         

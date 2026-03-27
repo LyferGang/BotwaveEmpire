@@ -3,9 +3,13 @@ import sys
 import os
 import time
 from agent.task_executor import TaskExecutor
+from agent.config import config
 
 def main_menu():
     try:
+        # Load configuration and API keys first
+        config.load_from_env()
+        
         executor = TaskExecutor()
     except Exception as e:
         print(f"Error initializing Orchestrator: {e}")
@@ -24,6 +28,23 @@ def main_menu():
             print("============================================================")
             print("               SCRYPT KEEPER: BOTWAVE EMPIRE                ")
             print("                   [ HQ STATUS: ONLINE ]                    ")
+            print("============================================================")
+            
+            # Display API key status for monitoring
+            api_status = []
+            if config.has_key('llm_api_key'):
+                api_status.append("[✓] LLM Service Key Active")
+            else:
+                api_status.append("[!] LLM Service Key Missing")
+                
+            if config.has_key('payment_gateway_key'):
+                api_status.append("[✓] Payment Gateway Key Active")
+            else:
+                api_status.append("[!] Payment Gateway Key Missing")
+            
+            print("\n[API KEY STATUS]")
+            for status in api_status:
+                print(f"  {status}")
             print("============================================================")
             
             task_info = executor.list_available_tasks()

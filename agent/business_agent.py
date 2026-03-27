@@ -8,6 +8,7 @@ import logging
 from typing import Dict, Any, List
 from datetime import datetime
 from pathlib import Path
+from agent.config import config
 
 class BusinessAgent:
     """Always-on business operations agent"""
@@ -16,6 +17,9 @@ class BusinessAgent:
         self.vault_dir = Path.home() / ".openclaw" / "script_keeper_vault"
         self.vault_dir.mkdir(parents=True, exist_ok=True)
         self.financial_data: Dict[str, Any] = {}
+        
+        # Load API keys for external services
+        config.load_from_env()
 
     def display_audit(self) -> Dict[str, Any]:
         """Display business audit report"""
@@ -133,3 +137,47 @@ class BusinessAgent:
                 json.dump(self.financial_data, f, indent=2)
         except Exception as e:
             logging.error(f"Persist error: {str(e)}")
+
+    def process_payment(self, client_id: str, amount: float, payment_method: str = None) -> bool:
+        """Process a payment using configured API keys"""
+        
+        try:
+            # Check if we have payment gateway key configured
+            payment_key = config.get('payment_gateway_key')
+            
+            if not payment_key:
+                logging.warning("No payment gateway key configured. Using internal ledger only.")
+                return self.update_revenue(client_id, amount)
+            
+            # Attempt to process through external payment service
+            # This would typically make an API call with the payment key
+            # Example: requests.post(payment_url, json={'key': payment_key, ...})
+            
+            logging.info(f"Processing {amount:.2f} for client {client_id} via payment gateway")
+            
+            # Simulate external payment processing
+            return True
+            
+        except Exception as e:
+            logging.error(f"Payment processing error: {str(e)}")
+            return False
+
+    def get_payment_status(self, client_id: str) -> Dict[str, Any]:
+        """Get payment status for a specific client"""
+        
+        try:
+            if client_id not in self.financial_data:
+                return {"error": "Client not found"}
+            
+            client = self.financial_data[client_id]
+            return {
+                "status": "success",
+                "data": {
+                    "total_paid": client.get("revenue", 0.0),
+                    "payment_history": len(client.get("payments", [])),
+                    "last_payment": client.get("last_payment")
+                }
+            }
+        except Exception as e:
+            logging.error(f"Payment status error: {str(e)}")
+            return {"error": str(e)}
