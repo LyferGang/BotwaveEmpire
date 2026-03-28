@@ -56,7 +56,6 @@ def main():
             report["status"] = "CLEANUP FAILED"
             report["all_passed"] = False
             report["failed_at"] = "FORENSIC CLEAN"
-            break
         
         # THE INSPECTION (SCOUT)
         print("\n=== PHASE 2: THE INSPECTION ===")
@@ -64,7 +63,6 @@ def main():
             report["status"] = "AUDIT FAILED"
             report["all_passed"] = False
             report["failed_at"] = "SCOUT AUDIT"
-            break
         
         # THE OVERHAUL
         print("\n=== PHASE 3: THE OVERHAUL ===")
@@ -72,7 +70,6 @@ def main():
             report["status"] = "OVERHAUL FAILED"
             report["all_passed"] = False
             report["failed_at"] = "SYSTEM OVERHAUL"
-            break
         
         # THE DISPATCH (FOREMAN)
         print("\n=== PHASE 4: THE DISPATCH ===")
@@ -81,7 +78,6 @@ def main():
             report["status"] = "DISPATCH FAILED"
             report["all_passed"] = False
             report["failed_at"] = "FOREMAN DISPATCH"
-            break
         
     except Exception as e:
         print(f"[MANIFOLD REPORT] Commissioning error: {e}")
