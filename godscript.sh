@@ -1,12 +1,9 @@
 #!/bin/bash
-# =============================================================================
-# GRINGO WIRELESS RECONNAISSANCE TOOL - MAIN ENTRY POINT
-# The "Brain" of the operation. Handles user interaction and menu navigation.
-# =============================================================================
 
-GRINGO_VERSION="2.0.1"
-GRINGO_AUTHOR="Gringo"
-GRINGO_DESCRIPTION="Wireless Reconnaissance & Business Logic Audit Suite"
+# =============================================================================
+# GRINGO WIRELESS RECONNAISSANCE TOOL v1.0
+# A powerful wireless reconnaissance and attack automation tool
+# =============================================================================
 
 # Color codes for terminal output
 RED='\033[0;31m'
@@ -16,7 +13,6 @@ BLUE='\033[0;34m'
 MAGENTA='\033[0;35m'
 CYAN='\033[0;36m'
 WHITE='\033[0;37m'
-BOLD='\033[1m'
 RESET='\033[0m'
 
 # Default configuration values
@@ -25,6 +21,8 @@ CHANNEL="6"
 DURATION="10"
 SELECTED_IFACE=""
 BSSID=""
+
+GRINGO_VERSION="1.0"
 
 # =============================================================================
 # UTILITY FUNCTIONS
