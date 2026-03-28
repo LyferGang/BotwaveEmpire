@@ -9,22 +9,46 @@
 
 import os
 import sys
-from dotenv import load_dotenv
-import requests
 from typing import Dict, Any
 
 def log_event(message):
     """Logging manifold for system events using plumbing terminology."""
     print(f"[MANIFOLD REPORT] {message}")
 
+def load_env_file(env_path: str) -> Dict[str, str]:
+    """Load environment variables from .env file without external dependencies"""
+    env_vars = {}
+    
+    try:
+        with open(env_path, 'r') as f:
+            for line in f:
+                # Skip comments and empty lines
+                if not line.strip() or line.strip().startswith('#'):
+                    continue
+                
+                # Parse KEY=VALUE format
+                if '=' in line:
+                    key, value = line.strip().split('=', 1)
+                    env_vars[key.strip()] = value.strip()
+    except Exception as e:
+        log_event(f"Environment file load error: {e}")
+    
+    return env_vars
+
 def main():
-    # Load environment configuration
+    # Load environment configuration from .env file directly
     try:
         env_path = os.path.join(os.path.dirname(__file__), '..', '.env')
-        load_dotenv(env_path)
         
-        tg_token = os.getenv('TG_FOREMAN_TOKEN', '')
-        telegram_chat_id = os.getenv('TELEGRAM_CHAT_ID', '8711428786')  # Default placeholder - update as needed
+        if not os.path.exists(env_path):
+            log_event("Environment file not found - checking defaults...")
+            env_vars = {}
+        else:
+            env_vars = load_env_file(env_path)
+        
+        # Extract required tokens from loaded environment
+        tg_token = env_vars.get('TG_FOREMAN_TOKEN', '')
+        telegram_chat_id = env_vars.get('TELEGRAM_CHAT_ID', '8711428786')  # Default placeholder
         
     except Exception as e:
         log_event(f"Environment loading error: {e}")
@@ -37,12 +61,17 @@ def main():
     try:
         # Load squad registry for status verification
         sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
-        from squad_registry import SquadRegistry
         
-        registry = SquadRegistry()
-        agents_status = registry.list_agents()
-        
-        log_event("Dream Team agents verified and pressurized")
+        # Import only if available (graceful degradation)
+        try:
+            from squad_registry import SquadRegistry
+            
+            registry = SquadRegistry()
+            agents_status = registry.list_agents()
+            
+            log_event("Dream Team agents verified and pressurized")
+        except ImportError:
+            log_event("Squad registry not found - proceeding without agent verification")
         
         # Prepare dispatch message
         message = "SCRYPT KEEPER REPORT: HQ Mainline is pressurized. RTX 5060 Optimized. JPS tool generated. Dream Team is on the clock."
@@ -56,6 +85,8 @@ def main():
             'text': message,
             'parse_mode': 'HTML'
         }
+        
+        import requests
         
         response = requests.post(url, params=params)
         
