@@ -169,7 +169,8 @@ main_menu() {
                 enable_monitor_mode "$SELECTED_IFACE"
                 
             4)
-                disable_monitor_mode "$INTERFACE"
+                # Fixed: Use SELECTED_IFACE for consistency with case 3
+                disable_monitor_mode "$SELECTED_IFACE"
                 ;;
                 
             5)
