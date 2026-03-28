@@ -164,6 +164,7 @@ main_menu() {
                 
                 # Enable monitor mode on the selected interface
                 enable_monitor_mode "$SELECTED_IFACE"
+                ;;
                 
             4)
                 # Fixed: Check if SELECTED_IFACE is set before disabling monitor mode
