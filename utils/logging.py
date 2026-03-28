@@ -8,7 +8,7 @@ class CustomLogger:
         self.logger = logging.getLogger(name)
 
     @staticmethod
-    def configure_logging(config: Dict[str, Any]) -> None:
+    def configure_logging(config: Dict[str, object]) -> None:
         """Configure the root logger using a provided dictionary."""
         
         logging.config.dictConfig(config)
