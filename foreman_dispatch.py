@@ -29,7 +29,8 @@ def main():
         telegram_chat_id = env_vars.get('TELEGRAM_CHAT_ID', '8711428786')  # Default placeholder
         
     except Exception as e:
-        
+        log_event(f"Environment load error: {e}")
+    
     if not tg_token or tg_token.startswith('87'):
         log_event("Telegram token missing from environment - checking keys.txt...")
         return
