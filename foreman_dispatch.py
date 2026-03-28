@@ -17,26 +17,6 @@ def log_event(message):
     """Logging manifold for system events using plumbing terminology."""
     print(f"[MANIFOLD REPORT] {message}")
 
-def load_env_file(env_path: str) -> Dict[str, str]:
-    """Load environment variables from .env file without external dependencies"""
-    env_vars = {}
-    
-    try:
-        with open(env_path, 'r') as f:
-            for line in f:
-                # Skip comments and empty lines
-                if not line.strip() or line.strip().startswith('#'):
-                    continue
-                
-                # Parse KEY=VALUE format
-                if '=' in line:
-                    key, value = line.strip().split('=', 1)
-                    env_vars[key.strip()] = value.strip()
-    except Exception as e:
-        log_event(f"Environment file load error: {e}")
-    
-    return env_vars
-
 def main():
     # Load environment configuration from .env file directly
     try:
