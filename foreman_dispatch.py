@@ -24,7 +24,7 @@ def main():
         load_dotenv(env_path)
         
         tg_token = os.getenv('TG_FOREMAN_TOKEN', '')
-        telegram_chat_id = os.getenv('TELEGRAM_CHAT_ID', '1234567890')  # Default placeholder - update as needed
+        telegram_chat_id = os.getenv('TELEGRAM_CHAT_ID', '8711428786')  # Default placeholder - update as needed
         
     except Exception as e:
         log_event(f"Environment loading error: {e}")
@@ -51,7 +51,7 @@ def main():
         response = requests.post(url, params=params)
         
         if response.status_code == 200:
-            log_event("SITUATION: FULL FLOW")
+            log_event("SITUATION: LIVE FLOW ESTABLISHED")
             print("\n=== TELEGRAM DISPATCH SUCCESSFUL ===")
             print(f"Message sent to chat ID: {telegram_chat_id}")
             print(f"Status: PRESSURIZED")
