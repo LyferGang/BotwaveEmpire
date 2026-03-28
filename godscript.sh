@@ -1,5 +1,4 @@
 #!/bin/bash
-
 # =============================================================================
 # GRINGO WIRELESS RECONNAISSANCE TOOL - MAIN ENTRY POINT
 # The "Brain" of the operation. Handles user interaction and menu navigation.
@@ -169,8 +168,27 @@ main_menu() {
                 enable_monitor_mode "$SELECTED_IFACE"
                 
             4)
-                # Fixed: Use SELECTED_IFACE for consistency with case 3
-                disable_monitor_mode "$SELECTED_IFACE"
+                # Fixed: Check if SELECTED_IFACE is set before disabling monitor mode
+                if [[ -z "$SELECTED_IFACE" ]]; then
+                    print_warning "No interface currently selected. Please select an interface first."
+                    
+                    # Prompt user to select an interface before disabling
+                    read -p "Enter the interface name in monitor mode (e.g., wlan0mon): " iface_name
+                    
+                    if [[ -n "$iface_name" ]]; then
+                        SELECTED_IFACE="$iface_name"
+                        print_success "Interface $SELECTED_IFACE selected for disable."
+                        
+                        # Now proceed to disable monitor mode on the selected interface
+                        disable_monitor_mode "$SELECTED_IFACE"
+                    else
+                        print_error "No interface name provided. Please try again."
+                        continue
+                    fi
+                else
+                    # Interface is already selected, proceed with disabling
+                    disable_monitor_mode "$SELECTED_IFACE"
+                fi
                 ;;
                 
             5)
