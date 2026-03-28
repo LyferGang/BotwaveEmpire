@@ -7,9 +7,11 @@
 #   STATUS: READY FOR DEPLOYMENT
 # ==============================================================================
 
+import requests
 import os
 import sys
 from typing import Dict, Any
+from dotenv import load_dotenv
 
 def log_event(message):
     """Logging manifold for system events using plumbing terminology."""
@@ -40,22 +42,16 @@ def main():
     try:
         env_path = os.path.join(os.path.dirname(__file__), '..', '.env')
         
-        if not os.path.exists(env_path):
-            log_event("Environment file not found - checking defaults...")
-            env_vars = {}
-        else:
-            env_vars = load_env_file(env_path)
+        load_dotenv(env_path)  # Load .env file with python-dotenv
         
-        # Extract required tokens from loaded environment
-        tg_token = env_vars.get('TG_FOREMAN_TOKEN', '')
+        # Verify required tokens exist (not placeholders)
+        tg_token = env_vars.get('TG_FOREMAN_TOKEN', '').strip()
         telegram_chat_id = env_vars.get('TELEGRAM_CHAT_ID', '8711428786')  # Default placeholder
         
     except Exception as e:
-        log_event(f"Environment loading error: {e}")
-        return
-    
-    if not tg_token:
-        log_event("Telegram token missing from environment")
+        
+    if not tg_token or tg_token.startswith('87'):
+        log_event("Telegram token missing from environment - checking keys.txt...")
         return
     
     try:
@@ -85,8 +81,6 @@ def main():
             'text': message,
             'parse_mode': 'HTML'
         }
-        
-        import requests
         
         response = requests.post(url, params=params)
         
