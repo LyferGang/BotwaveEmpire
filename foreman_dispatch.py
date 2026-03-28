@@ -24,7 +24,7 @@ def main():
         load_dotenv(env_path)
         
         tg_token = os.getenv('TG_FOREMAN_TOKEN', '')
-        chat_id = '1234567890'  # Default placeholder - update as needed
+        telegram_chat_id = os.getenv('TELEGRAM_CHAT_ID', '1234567890')  # Default placeholder - update as needed
         
     except Exception as e:
         log_event(f"Environment loading error: {e}")
@@ -36,14 +36,14 @@ def main():
     
     try:
         # Prepare dispatch message
-        message = "SCRYPT KEEPER REPORT: HQ Mainline is pressurized. RTX 5060 Optimized. JPS tool generated. Dream Team is on the clock."
+        message = "S C R Y P T  K E E P E R : HQ MAINLINE IS PRESSURIZED. RTX 5060 OPTIMIZED. BOTWAVE EMPIRE IS ONLINE."
         
         log_event("Dispatching communication to Dream Team...")
         
         # Send Telegram message via API
         url = f"https://api.telegram.org/bot{tg_token}/sendMessage"
         params = {
-            'chat_id': chat_id,
+            'chat_id': telegram_chat_id,
             'text': message,
             'parse_mode': 'HTML'
         }
@@ -51,13 +51,20 @@ def main():
         response = requests.post(url, params=params)
         
         if response.status_code == 200:
-            log_event("SITUATION: COMMS ESTABLISHED")
+            log_event("SITUATION: FULL FLOW")
             print("\n=== TELEGRAM DISPATCH SUCCESSFUL ===")
-            print(f"Message sent to chat ID: {chat_id}")
+            print(f"Message sent to chat ID: {telegram_chat_id}")
             print(f"Status: PRESSURIZED")
+        elif response.status_code == 401 or response.status_code == 404:
+            log_event("Token leak detected - checking .env for corruption...")
+            # Check if token is valid format (should contain colon)
+            if ':' not in tg_token:
+                log_event("ERROR: Token appears corrupted or missing")
+                print("\n[MANIFOLD REPORT] Token validation failed - bleeding lines...")
+            else:
+                log_event(f"Token format OK but API returned {response.status_code}")
         else:
             log_event(f"Communication leak detected. Status code: {response.status_code}")
-            print("\n[MANIFOLD REPORT] Telegram dispatch failed - checking for leaks...")
             
     except Exception as e:
         log_event(f"Dispatch error: {e}")

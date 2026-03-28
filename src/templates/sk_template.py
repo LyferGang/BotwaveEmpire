@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # ==============================================================================
-#   S C R Y P T   K E E P E R   |   B O T W A V E   E M P I R E
+#   S C R Y P T   K E E P E R   | B O T W A V E   E M P I R E
 # ==============================================================================
 #   JOB: {job_description}
 #   STATION: HQ-POP_OS
