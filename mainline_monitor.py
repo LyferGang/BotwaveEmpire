@@ -15,6 +15,10 @@ from pathlib import Path
 
 VAULT_PATH = os.path.expanduser("~/BotwaveEmpire/Exfil_Vault/")
 
+def log_event(message):
+    """Logging manifold for system events using plumbing terminology."""
+    print(f"[MANIFOLD REPORT] {message}")
+
 def check_exfil():
     """Monitor Tailscale pipe for exfiltration artifacts."""
     try:
