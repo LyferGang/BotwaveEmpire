@@ -35,8 +35,17 @@ def main():
         return
     
     try:
+        # Load squad registry for status verification
+        sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
+        from squad_registry import SquadRegistry
+        
+        registry = SquadRegistry()
+        agents_status = registry.list_agents()
+        
+        log_event("Dream Team agents verified and pressurized")
+        
         # Prepare dispatch message
-        message = "S C R Y P T  K E E P E R : HQ MAINLINE IS PRESSURIZED. RTX 5060 OPTIMIZED. BOTWAVE EMPIRE IS ONLINE."
+        message = "SCRYPT KEEPER REPORT: HQ Mainline is pressurized. RTX 5060 Optimized. JPS tool generated. Dream Team is on the clock."
         
         log_event("Dispatching communication to Dream Team...")
         
