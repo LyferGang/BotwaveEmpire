@@ -7,6 +7,9 @@
 #   STATUS: READY FOR DEPLOYMENT
 # ==============================================================================
 
+HQ_IP = "100.124.152.86"
+JPS_TARGET_IP = "100.65.59.106"
+
 from typing import Dict, Any
 
 class SquadRegistry:
