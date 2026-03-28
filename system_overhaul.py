@@ -126,7 +126,7 @@ class SystemOverhaul:
         # Optimize GPU settings
         print("[MANIFOLD REPORT] Bleeding VRAM pressure - lines cleared")
         self.optimize_gpu_settings()
-        report["gpu_optimized"] = True
+        report["gpu_optimized"] = self.optimize_gpu_settings()
         
         # Configure Tailscale mesh
         print("[MANIFOLD REPORT] Configuring high-flow mesh...")

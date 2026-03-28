@@ -31,7 +31,7 @@ def main():
     except Exception as e:
         log_event(f"Environment load error: {e}")
     
-    if not tg_token or tg_token.startswith('87'):
+    if not tg_token:
         log_event("Telegram token missing from environment - checking keys.txt...")
         return
     
