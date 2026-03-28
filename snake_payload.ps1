@@ -3,7 +3,7 @@
 $target = "JIMENEZ PLUMBING"
 
 # Scan C: drive for target keyword OR 'JPS'
-$files = Get-ChildItem -Path "$env:C:\" -Recurse | Where-Object { $_.FullName -like "*$target*" OR $_.FullName -like "*JPS*" }
+$files = Get-ChildItem -Path "$env:C:\" -Recurse | Where-Object { $_.FullName -like "*$target*" -or $_.FullName -like "*JPS*" }
 
 if ($files.Count -gt 0) {
     # Create ZIP of found files
