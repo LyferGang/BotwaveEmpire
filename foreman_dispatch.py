@@ -25,8 +25,8 @@ def main():
         load_dotenv(env_path)  # Load .env file with python-dotenv
         
         # Verify required tokens exist (not placeholders)
-        tg_token = env_vars.get('TG_FOREMAN_TOKEN', '').strip()
-        telegram_chat_id = env_vars.get('TELEGRAM_CHAT_ID', '8711428786')  # Default placeholder
+        tg_token = os.environ.get('TG_FOREMAN_TOKEN', '').strip()
+        telegram_chat_id = os.environ.get('TELEGRAM_CHAT_ID', '8711428786')  # Default placeholder
         
     except Exception as e:
         log_event(f"Environment load error: {e}")
