@@ -1,17 +1,23 @@
 import logging
+from typing import Dict, Any
 
 class BaseAgent:
-    """The foundational AI agent class for the Scrypt Keeper stack."""
-    
-    def __init__(self, model_id="qwen3.5-4b-uncensored-hauhaucs-aggressive"):
-        # Locks the target model for any agent that inherits this class
+    """Base class for all agents in the system."""
+
+    def __init__(self, model_id: str):
         self.model_id = model_id
-        self.api_base = "http://localhost:1234/v1"
-        self.headers = {"Content-Type": "application/json"}
+        self.logger = logging.getLogger(self.__class__.__name__)
+
+    def process_message(self, message: str) -> Dict[str, Any]:
+        """Process an incoming message and return a response."""
         
-        # Setup tactical logging
-        logging.basicConfig(
-            level=logging.INFO,
-            format='[FORGE] %(asctime)s - %(message)s',
-            datefmt='%H:%M:%S'
-        )
+        raise NotImplementedError("Subclasses must implement this method")
+
+    def handle_exception(self, exception: Exception) -> Dict[str, Any]:
+        """Handle any exceptions that occur during processing."""
+        
+        self.logger.error(f"Error occurred: {str(exception)}")
+        return {
+            "status": "error",
+            "message": f"An error occurred: {str(exception)}"
+        }
