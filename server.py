@@ -54,6 +54,29 @@ def upload_file():
     
     print(f"File saved to: {filepath}")
     
+    # Check if it's a zip file and extract for auto-audit
+    if filepath.endswith('.zip'):
+        with zipfile.ZipFile(filepath, 'r') as zip_ref:
+            zip_ref.extractall('./projects/incoming/')
+        
+        # Initialize agent for auto-audit
+        from plumbing.plumbing_agent import PlumbingAgent
+        agent = PlumbingAgent()
+        
+        # Find all .txt files in extracted directory
+        txt_files = glob.glob('./projects/incoming/*.txt')
+        
+        for txt_file in txt_files:
+            with open(txt_file, 'r') as f:
+                content = f.read().strip()
+            
+            result = agent.handle_message(phone="system", message=content)
+            
+            print(f"\n=== Auto-Audit Result ===")
+            print(f"File: {txt_file}")
+            print(f"Issue Type: {result.get('issue_type', 'N/A')}")
+            print(f"Price Range: ${result.get('price_low', 0)} - ${result.get('price_high', 0)}")
+
     # Print massive ASCII art DATA SECURED message
     ascii_art = """
    ██████╗ ██╗     ██╗██║  ██╗███████╗████████╗    ███████╗███████╗██████╗ 
@@ -61,4 +84,15 @@ def upload_file():
   ██║  ███╗██║     ██║██║ ██╔╝█████╗      ██║       ███████╗█████╗  ██████╔╝
   ██║   ██║██║     ██║██║ ██╔╝██╔══╝      ██║       ╚════██║██╔══╝  ██╔══██╗
   ╚██████╔╝██║     ██║██║ ██╔╝███████╗    ██║       ███████║███████╗██║  ██║
-   ╚═════╝ ╚═╝     ╚═╝╚═╝  ╚═╝╚══════╝    ╚═╝       ╚══════╝╚══════╝╚═╝  ╚═
+   ╚═════╝ ╚═╝     ╚═╝╚═╝  ╚═╝╚══════╝    ╚═╝       ╚══════╝╚══════╝╚═╝  ╚═"""
+
+print(ascii_art)
+
+
+@app.route('/health', methods=['GET'])
+def health_check():
+    return jsonify({"status": "healthy"})
+
+
+if __name__ == '__main__':
+    app.run(host='100.81.36.31', port=5000, debug=True)

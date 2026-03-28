@@ -102,8 +102,8 @@ class LocalLLMClient:
     """Client for local LLM models via LM Studio OpenAI-compatible API."""
 
     def __init__(self, base_url: str = None, model: str = None):
-        self.base_url = base_url or os.getenv("LLM_URL", "http://127.0.0.1:1234/v1")
-        self.model = model or os.getenv("LLM_MODEL", "qwen3.5-9b-claude-4.6-opus-uncensored-distilled")
+        self.base_url = base_url or os.getenv("LLM_URL", "http://localhost:1234/v1")
+        self.model = model or os.getenv("LLM_MODEL", "qwen3.5-9b")
         self.timeout = int(os.getenv("LLM_TIMEOUT", "30"))
         self.api_key = os.getenv("LLM_API_KEY", "not-needed")
 
