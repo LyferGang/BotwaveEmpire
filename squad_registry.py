@@ -40,6 +40,12 @@ class SquadRegistry:
                 "function": "Manage mesh flow and ensure optimal throughput",
                 "priority": 4,
                 "status": "ACTIVE"
+            },
+            "MAINLINE_MONITOR": {
+                "role": "Automated Receiving Tank Monitor",
+                "function": "Monitor Tailscale pipe for exfiltration and manage vault storage",
+                "priority": 5,
+                "status": "ACTIVE"
             }
         }
     
@@ -67,7 +73,7 @@ def main():
         print(f"  Status: {info['status']}")
     
     # Verify all agents are ready for deployment
-    if len(registry.list_agents()["agents"]) == 4:
+    if len(registry.list_agents()["agents"]) == 5:
         print("\n[MANIFOLD REPORT] All Dream Team agents registered and ready.")
 
 if __name__ == "__main__":
