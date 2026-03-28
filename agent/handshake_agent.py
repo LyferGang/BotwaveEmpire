@@ -5,7 +5,7 @@ from typing import Dict, Any
 
 class HandshakeAgent(BaseAgent):
     def __init__(self):
-        super().__init__(model_id="qwen3.5-4b-claude-4.6-os-auto-variable-heretic-uncensored-thinking")
+        super().__init__(model_id="qwen3.5-4b-claude-4b-os-auto-variable-heretic-uncensored-thinking")
 
     def capture_handshake(self) -> Dict[str, Any]:
         """Capture WPA/WPS handshake using airdrop tools"""
