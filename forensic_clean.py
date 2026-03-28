@@ -10,7 +10,7 @@
 import os
 import subprocess
 import time
-from typing import List, Optional
+from typing import List, Optional, Dict, Any
 
 class ForensicCleaner:
     """System forensic cleaner for pipe maintenance"""

@@ -10,7 +10,7 @@
 import os
 import subprocess
 import time
-from typing import Optional, List
+from typing import Optional, List, Dict, Any
 
 class SystemOverhaul:
     """Master Valve for Linux system optimization"""
@@ -124,32 +124,4 @@ class SystemOverhaul:
         }
         
         # Optimize GPU settings
-        print("[MANIFOLD REPORT] Optimizing GPU parameters...")
-        report["gpu_optimized"] = self.optimize_gpu_settings()
-        
-        # Configure Tailscale mesh
-        print("[MANIFOLD REPORT] Configuring Tailscale mesh...")
-        report["mesh_configured"] = self.configure_tailscale_mesh()
-        
-        # Setup automated scheduling
-        print("[MANIFOLD REPORT] Setting up automated maintenance...")
-        report["scheduling_set"] = self.setup_automated_scheduling()
-        
-        return report
-
-def main():
-    overhaul = SystemOverhaul()
-    
-    try:
-        report = overhaul.run_overhaul()
-        
-        print("\n=== SYSTEM OVERHAUL COMPLETE ===")
-        print(f"GPU optimized: {report['gpu_optimized']}")
-        print(f"Mesh configured: {report['mesh_configured']}")
-        print(f"Scheduling set: {report['scheduling_set']}")
-        
-    except Exception as e:
-        print(f"[MANIFOLD REPORT] Overhaul error: {e}")
-
-if __name__ == "__main__":
-    main()
+        print
