@@ -1,0 +1,3 @@
+chmod +x squad_registry.py
+chmod +x forensic_clean.py
+chmod +x system_overhaul.py
