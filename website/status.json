@@ -1,0 +1,15 @@
+{
+  "system_status": "operational",
+  "last_updated": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
+  "containers": {
+    "api": "healthy",
+    "business_agent": "healthy",
+    "plumbing_agent": "healthy",
+    "intelligence_agent": "healthy"
+  },
+  "endpoints": {
+    "api": "http://localhost:8080",
+    "dashboard": "http://localhost:5000"
+  },
+  "version": "1.0.0"
+}
