@@ -1,0 +1,104 @@
+# Botwave Empire - Docker Compose Configuration
+# Self-contained multi-agent automation platform
+
+version: '3.8'
+
+services:
+  # API Server - Event Handler
+  api:
+    build:
+      context: .
+      dockerfile: docker/api/Dockerfile
+    container_name: botwave-api
+    ports:
+      - "${API_PORT:-8080}:8080"
+    environment:
+      - LLM_API_URL=${LLM_API_URL:-http://host.docker.internal:1234/v1}
+      - LLM_API_KEY=${LLM_API_KEY:-}
+      - LLM_MODEL=${LLM_MODEL:-qwen3.5-4b-uncensored-hauhaucs-aggressive}
+      - DATABASE_URL=${DATABASE_URL:-sqlite:///data/botwave.db}
+      - API_SECRET_KEY=${API_SECRET_KEY:-change-me-in-production}
+      - API_DEBUG=${API_DEBUG:-false}
+    volumes:
+      - ./data:/app/data
+      - ./logs:/app/logs
+      - ./vault:/app/vault
+    networks:
+      - botwave-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # Business Agent
+  business-agent:
+    build:
+      context: .
+      dockerfile: docker/agent/Dockerfile
+    container_name: botwave-business
+    environment:
+      - AGENT_NAME=business
+      - LLM_API_URL=${LLM_API_URL:-http://host.docker.internal:1234/v1}
+    volumes:
+      - ./data:/app/data
+      - ./logs:/app/logs
+    networks:
+      - botwave-network
+    depends_on:
+      - api
+    restart: unless-stopped
+    profiles:
+      - agents
+
+  # Plumbing Agent
+  plumbing-agent:
+    build:
+      context: .
+      dockerfile: docker/agent/Dockerfile
+    container_name: botwave-plumbing
+    environment:
+      - AGENT_NAME=plumbing
+      - LLM_API_URL=${LLM_API_URL:-http://host.docker.internal:1234/v1}
+    volumes:
+      - ./data:/app/data
+      - ./logs:/app/logs
+    networks:
+      - botwave-network
+    depends_on:
+      - api
+    restart: unless-stopped
+    profiles:
+      - agents
+
+  # Intelligence Agent
+  intelligence-agent:
+    build:
+      context: .
+      dockerfile: docker/agent/Dockerfile
+    container_name: botwave-intelligence
+    environment:
+      - AGENT_NAME=intelligence
+      - LLM_API_URL=${LLM_API_URL:-http://host.docker.internal:1234/v1}
+      - LLM_MODEL=${LLM_MODEL:-qwen3.5-4b-uncensored-hauhaucs-aggressive}
+    volumes:
+      - ./data:/app/data
+      - ./logs:/app/logs
+    networks:
+      - botwave-network
+    depends_on:
+      - api
+    restart: unless-stopped
+    profiles:
+      - agents
+
+networks:
+  botwave-network:
+    driver: bridge
+
+volumes:
+  data:
+  logs:
+  vault:
