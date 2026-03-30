@@ -150,7 +150,7 @@ class SystemOrganizerAgent(BaseAgent):
         """Organize files into categorized folders."""
         self.logger.info(f"Organizing files on {self.ssh_host}...")
 
-        organize_script = f"""
+        organize_script = rf"""
         BASE_DIR="$HOME"
         ORG_DIR="$BASE_DIR/{self.organized_dir}_$(date +%Y%m%d)"
 
@@ -188,6 +188,8 @@ class SystemOrganizerAgent(BaseAgent):
         echo ""
         echo "Organized files saved to: $ORG_DIR"
         """
+
+        result = self._ssh_exec(organize_script)
 
         return self._format_success({
             "action": "organize",
