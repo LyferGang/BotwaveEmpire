@@ -35,7 +35,7 @@ class StripeService:
 
     def is_configured(self) -> bool:
         """Check if Stripe is properly configured."""
-        return bool(self.api_key and not self.api_key.startswith("sk_live_") and not self.api_key.startswith("sk_test_"))
+        return bool(self.api_key and (self.api_key.startswith("sk_live_") or self.api_key.startswith("sk_test_")))
 
     def create_customer(self, email: str, name: str, metadata: Optional[Dict] = None) -> Dict[str, Any]:
         """Create a new Stripe customer."""
