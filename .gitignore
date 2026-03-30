@@ -106,8 +106,8 @@ janitor_service.py
 plumbing/
 Botwave/
 
-# Dashboard templates (your IP)
-dashboard/templates/
+# Dashboard templates (client-specific ones are gitignored separately)
+# dashboard/templates/
 
 # Custom scripts
 commissioning.py

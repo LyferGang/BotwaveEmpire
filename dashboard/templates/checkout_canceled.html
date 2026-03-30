@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Payment Canceled - Botwave</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #0f0f0f; color: #fff; min-height: 100vh; display: flex; align-items: center; justify-content: center; }
+        .container { text-align: center; padding: 40px; max-width: 500px; }
+        .cancel-icon { width: 80px; height: 80px; background: #6b7280; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 25px; font-size: 40px; }
+        h1 { font-size: 28px; margin-bottom: 15px; }
+        p { color: #888; line-height: 1.6; margin-bottom: 30px; }
+        .btn { background: #3b82f6; color: #fff; text-decoration: none; padding: 14px 32px; border-radius: 8px; font-weight: 500; display: inline-block; transition: all 0.2s; }
+        .btn:hover { background: #2563eb; transform: translateY(-1px); }
+        .btn-outline { background: transparent; border: 1px solid #3b82f6; color: #3b82f6; }
+        .btn-outline:hover { background: #3b82f6; color: #fff; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="cancel-icon">✕</div>
+        <h1>Payment Canceled</h1>
+        <p>No worries! You haven't been charged. Feel free to browse our plans and come back when you're ready.</p>
+        <div style="display: flex; gap: 10px; justify-content: center;">
+            <a href="/pricing" class="btn">View Plans</a>
+            <a href="/" class="btn btn-outline">Go Home</a>
+        </div>
+    </div>
+</body>
+</html>
