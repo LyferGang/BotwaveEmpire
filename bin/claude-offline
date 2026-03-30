@@ -1,0 +1,294 @@
+#!/usr/bin/env python3
+"""
+CLAUDE OFFLINE - 100% Local Claude Code Clone
+Uses LM Studio's Anthropic-compatible endpoint
+Zero API costs - runs on your GPU
+
+Usage:
+  claude-offline                    # Interactive mode
+  claude-offline "your prompt"      # Single prompt
+"""
+
+import os
+import sys
+import json
+import requests
+import subprocess
+from pathlib import Path
+from datetime import datetime
+
+# Configuration
+LM_STUDIO_BASE = os.getenv("LM_STUDIO_URL", "http://localhost:1234")
+ANTHROPIC_ENDPOINT = f"{LM_STUDIO_BASE}/v1/messages"
+MODEL = os.getenv("LM_STUDIO_MODEL", "llama-3.1-8b-instruct-abliterated-obliteratus")
+API_KEY = "lmstudio"
+
+# Colors - same as Claude Code
+class C:
+    RESET = "\033[0m"
+    BOLD = "\033[1m"
+    DIM = "\033[2m"
+    BLUE = "\033[94m"
+    GREEN = "\033[92m"
+    YELLOW = "\033[93m"
+    RED = "\033[91m"
+    CYAN = "\033[96m"
+    MAGENTA = "\033[95m"
+
+# System prompt - Claude Code personality
+SYSTEM_PROMPT = """You are Claude Code, an AI coding assistant. You work 100% offline via LM Studio.
+
+CAPABILITIES:
+- Write and edit code in any language
+- Execute shell commands (user approves with /y)
+- Read and write files
+- Git operations
+- Debug and fix bugs
+- Explain code and architecture
+- Multi-agent task parallelization
+
+RULES:
+- Be concise and direct
+- Use markdown for code blocks
+- Show diffs for file edits
+- Explain commands before running
+- Never make external API calls
+- Everything runs locally
+
+CURRENT: {cwd}
+DATE: {date}""".format(cwd=Path.cwd(), date=datetime.now().strftime("%Y-%m-%d"))
+
+
+class ClaudeOffline:
+    """Offline Claude Code clone."""
+
+    def __init__(self):
+        self.messages = []
+        self.pending = []
+
+    def check_lm_studio(self):
+        """Verify LM Studio is running."""
+        try:
+            resp = requests.get(f"{LM_STUDIO_BASE}/v1/models", timeout=5)
+            if resp.status_code == 200:
+                models = resp.json().get("data", [])
+                if models:
+                    print(f"{C.GREEN}✓ LM Studio: {models[0]['id']}{C.RESET}")
+                    return True
+        except:
+            pass
+        print(f"{C.RED}✗ LM Studio not running{C.RESET}")
+        print("Start: lms server start")
+        return False
+
+    def chat(self, user_msg, stream=False):
+        """Send message via Anthropic-compatible endpoint."""
+        messages = [{"role": "user", "content": user_msg}]
+
+        payload = {
+            "model": MODEL,
+            "max_tokens": 4096,
+            "messages": messages,
+            "stream": stream,
+            "system": SYSTEM_PROMPT,
+        }
+
+        headers = {
+            "Content-Type": "application/json",
+            "Authorization": f"Bearer {API_KEY}",
+            "x-api-key": API_KEY,
+        }
+
+        try:
+            resp = requests.post(
+                ANTHROPIC_ENDPOINT,
+                json=payload,
+                headers=headers,
+                stream=stream,
+                timeout=120,
+            )
+
+            if stream:
+                print(f"\n{C.CYAN}Claude:{C.RESET} ", end="", flush=True)
+                full_response = ""
+                buffer = ""
+
+                for line in resp.iter_lines():
+                    if line:
+                        line = line.decode("utf-8")
+                        if line.startswith("data: "):
+                            data = line[6:]
+                            if data.strip() == "[DONE]":
+                                break
+                            try:
+                                event = json.loads(data)
+                                event_type = event.get("type", "")
+                                if event_type == "content_block_delta":
+                                    delta = event.get("delta", {})
+                                    text = delta.get("text", "")
+                                    if text:
+                                        full_response += text
+                                        print(text, end="", flush=True)
+                                elif event_type == "message_start":
+                                    pass
+                                elif event_type == "message_stop":
+                                    break
+                            except json.JSONDecodeError:
+                                pass
+
+                print()
+                self.messages.append({"role": "user", "content": user_msg})
+                self.messages.append({"role": "assistant", "content": full_response})
+                self.parse_actions(full_response)
+                return full_response
+
+            else:
+                data = resp.json()
+                content = data.get("content", [{}])[0].get("text", "")
+                print(f"\n{C.CYAN}Claude:{C.RESET} {content}")
+                return content
+
+        except requests.exceptions.ConnectionError:
+            print(f"{C.RED}Cannot connect to LM Studio{C.RESET}")
+            return None
+        except Exception as e:
+            print(f"{C.RED}Error: {e}{C.RESET}")
+            return None
+
+    def parse_actions(self, response):
+        """Extract commands from response."""
+        import re
+        bash_cmds = re.findall(r'```(?:bash|sh)\n(.*?)```', response, re.DOTALL)
+        for cmd in bash_cmds:
+            cmd = cmd.strip()
+            if cmd and not cmd.startswith("#"):
+                self.pending.append(cmd)
+
+    def run_cmd(self, cmd):
+        """Execute shell command."""
+        print(f"\n{C.DIM}Running: {cmd}{C.RESET}")
+        result = subprocess.run(cmd, shell=True, capture_output=True, text=True)
+        if result.stdout:
+            print(result.stdout)
+        if result.stderr:
+            print(f"{C.RED}STDERR:{C.RESET} {result.stderr}")
+        return result.returncode == 0
+
+
+def print_banner():
+    """Welcome banner."""
+    print(f"""
+{C.CYAN}{C.BOLD}╔══════════════════════════════════════════════════════════╗{C.RESET}
+{C.CYAN}{C.BOLD}║{C.RESET}  {C.BOLD}CLAUDE OFFLINE - Local AI Coding Assistant     {C.CYAN}{C.BOLD}║{C.RESET}
+{C.CYAN}{C.BOLD}║{C.RESET}  100% FREE - LM Studio - No API Costs                    {C.CYAN}{C.BOLD}║{C.RESET}
+{C.CYAN}{C.BOLD}╚══════════════════════════════════════════════════════════╝{C.RESET}
+""")
+
+
+def print_help():
+    """Help message."""
+    print(f"""
+{C.BOLD}COMMANDS:{C.RESET}
+  /help, /h     Show this help
+  /clear        Clear conversation
+  /y            Approve pending commands
+  /n            Reject pending commands
+  /git <cmd>    Git command
+  /run <cmd>    Run shell command
+  /status       System status
+  /quit, /q     Exit
+
+{C.BOLD}TIPS:{C.RESET}
+  - Ask for code, explanations, or command help
+  - Use ! for shell commands: !ls -la
+  - Paste code for analysis
+""")
+
+
+def interactive(cli):
+    """Interactive mode."""
+    print_banner()
+    print(f"{C.DIM}Type /help for commands, /quit to exit{C.RESET}\n")
+
+    while True:
+        try:
+            cwd = Path.cwd().name
+            prompt = f"{C.BOLD}{C.BLUE}┌─[{cwd}]{C.RESET}\n"
+            prompt += f"{C.BOLD}{C.BLUE}└─❯ {C.RESET}"
+
+            user_input = input(prompt).strip()
+
+            if not user_input:
+                continue
+
+            if user_input.startswith("/"):
+                cmd = user_input[1:].split()
+
+                if cmd[0] in ("quit", "exit", "q"):
+                    print(f"{C.BLUE}Goodbye!{C.RESET}")
+                    break
+
+                elif cmd[0] in ("help", "h"):
+                    print_help()
+
+                elif cmd[0] == "clear":
+                    cli.messages = []
+                    cli.pending = []
+                    print(f"{C.BLUE}Cleared{C.RESET}")
+
+                elif cmd[0] == "y":
+                    if cli.pending:
+                        for c in cli.pending:
+                            cli.run_cmd(c)
+                        cli.pending = []
+                    else:
+                        print(f"{C.YELLOW}No pending commands{C.RESET}")
+
+                elif cmd[0] == "n":
+                    cli.pending = []
+                    print(f"{C.YELLOW}Rejected{C.RESET}")
+
+                elif cmd[0] == "run" and len(cmd) > 1:
+                    cli.run_cmd(" ".join(cmd[1:]))
+
+                elif cmd[0] == "git" and len(cmd) > 1:
+                    cli.run_cmd(f"git {' '.join(cmd[1:])}")
+
+                elif cmd[0] == "status":
+                    print(f"\n{C.BOLD}Status:{C.RESET}")
+                    print(f"  Model: {MODEL}")
+                    print(f"  Endpoint: {ANTHROPIC_ENDPOINT}")
+                    print(f"  Messages: {len(cli.messages)}")
+                    print(f"  Pending: {len(cli.pending)}")
+
+                else:
+                    print(f"{C.YELLOW}Unknown: {user_input}{C.RESET}")
+
+            elif user_input.startswith("!"):
+                cli.run_cmd(user_input[1:])
+
+            else:
+                cli.chat(user_input)
+
+        except KeyboardInterrupt:
+            print(f"\n{C.YELLOW}Interrupted. /quit to exit.{C.RESET}")
+        except EOFError:
+            break
+
+
+def main():
+    cli = ClaudeOffline()
+
+    if not cli.check_lm_studio():
+        sys.exit(1)
+
+    if len(sys.argv) == 1:
+        interactive(cli)
+    elif sys.argv[1] in ("-h", "--help"):
+        print_help()
+    else:
+        cli.chat(" ".join(sys.argv[1:]))
+
+
+if __name__ == "__main__":
+    main()

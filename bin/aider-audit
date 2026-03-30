@@ -1,0 +1,105 @@
+#!/usr/bin/env python3
+"""
+Botwave Self-Audit with Aider
+Uses aider's /run command to audit and fix issues
+"""
+
+import subprocess
+import sys
+from pathlib import Path
+
+EMPIRE_DIR = Path("/home/gringo/BotwaveEmpire")
+AUDIT_SCRIPT = EMPIRE_DIR / "skills" / "active" / "self-audit" / "audit.py"
+
+def check_lm_studio():
+    """Check if LM Studio is running."""
+    import requests
+    try:
+        resp = requests.get("http://localhost:1234/v1/models", timeout=5)
+        if resp.status_code == 200:
+            data = resp.json()
+            models = [m["id"] for m in data.get("data", [])]
+            print(f"LM Studio: OK ({len(models)} models loaded)")
+            return True
+    except:
+        pass
+    print("LM Studio: NOT RUNNING - Start LM Studio first")
+    return False
+
+def run_audit_list():
+    """Run audit to list issues."""
+    print("\n" + "=" * 60)
+    print("RUNNING SELF-AUDIT...")
+    print("=" * 60)
+
+    result = subprocess.run(
+        ["python3", str(AUDIT_SCRIPT), "--list-issues"],
+        capture_output=True,
+        text=True
+    )
+    print(result.stdout)
+    if result.stderr:
+        print(result.stderr)
+
+    return result.returncode == 0
+
+def run_aider_fix(files=None):
+    """Run aider to fix issues."""
+    print("\n" + "=" * 60)
+    print("LAUNCHING AIDER TO FIX ISSUES...")
+    print("=" * 60)
+
+    cmd = [
+        "aid",
+        "--yes",  # Auto-accept suggestions
+        "--no-auto-commits",  # Don't auto-commit
+        "--model", "openai/qwen3.5-4b-uncensored-hauhaucs-aggressive",
+        "--openai-api-base", "http://localhost:1234/v1",
+        "--openai-api-key", "not-needed"
+    ]
+
+    if files:
+        cmd.extend(files)
+
+    # Add the /run command as input
+    audit_cmd = f"/run python3 {AUDIT_SCRIPT} --fix\n/exit\n"
+
+    result = subprocess.run(
+        cmd,
+        input=audit_cmd,
+        capture_output=True,
+        text=True,
+        timeout=300
+    )
+
+    print(result.stdout)
+    if result.stderr:
+        print(result.stderr)
+
+    return result.returncode == 0
+
+def main():
+    print("=" * 60)
+    print("BOTWAVE SELF-AUDIT WITH AIDER")
+    print("=" * 60)
+
+    if not check_lm_studio():
+        sys.exit(1)
+
+    if len(sys.argv) > 1 and sys.argv[1] == "--fix":
+        # Run audit first
+        if run_audit_list():
+            # Then fix with aider
+            run_aider_fix()
+    else:
+        # Just list issues
+        run_audit_list()
+        print("\n" + "=" * 60)
+        print("To fix issues with aider, run:")
+        print(f"  {sys.argv[0]} --fix")
+        print("\nOr manually with aider:")
+        print("  aid --yes <files>")
+        print("=" * 60)
+
+if __name__ == "__main__":
+    main()

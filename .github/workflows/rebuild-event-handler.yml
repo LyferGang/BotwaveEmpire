@@ -1,0 +1,97 @@
+# Botwave Empire - Rebuild Event Handler
+# Restarts services when code changes are pushed
+# Modeled after thepopebot's rebuild-event-handler.yml
+
+name: Rebuild Event Handler
+
+on:
+  push:
+    branches: [main, master]
+    paths:
+      - 'lib/**'
+      - 'dashboard/**'
+      - 'config/**'
+      - 'docker/**'
+      - 'docker-compose.yml'
+      - '.github/workflows/**'
+      - 'mcp/**'
+      - 'scripts/**'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  rebuild:
+    runs-on: ubuntu-latest
+    if: github.repository_owner == github.actor
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Detect changes
+        id: changes
+        run: |
+          echo "changed_files<<EOF" >> $GITHUB_OUTPUT
+          git diff --name-only ${{ github.event.before }} ${{ github.event.after }} >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
+      - name: Validate configuration
+        run: |
+          # Validate JSON configs
+          for file in config/*.json; do
+            if [ -f "$file" ]; then
+              if python3 -c "import json; json.load(open('$file'))" 2>/dev/null; then
+                echo "✅ $file is valid JSON"
+              else
+                echo "❌ $file is invalid JSON"
+                exit 1
+              fi
+            fi
+          done
+
+          # Validate YAML configs
+          for file in config/*.yml config/*.yaml .github/workflows/*.yml; do
+            if [ -f "$file" ]; then
+              if python3 -c "import yaml; yaml.safe_load(open('$file'))" 2>/dev/null; then
+                echo "✅ $file is valid YAML"
+              else
+                echo "⚠️ $file YAML validation skipped (pyyaml may not be installed)"
+              fi
+            fi
+          done
+
+      - name: Update version file
+        run: |
+          VERSION=$(git describe --tags --always 2>/dev/null || echo "dev")
+          echo "version=$VERSION" > .version
+          echo "commit=${{ github.sha }}" >> .version
+          echo "built_at=$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> .version
+
+      - name: Trigger deployment webhook (optional)
+        if: env.WEBHOOK_URL != ''
+        env:
+          WEBHOOK_URL: ${{ secrets.BOTWAVE_WEBHOOK_URL }}
+        run: |
+          curl -X POST "$WEBHOOK_URL" \
+            -H "Content-Type: application/json" \
+            -H "X-Event: rebuild" \
+            -d '{
+              "event": "rebuild",
+              "ref": "${{ github.ref }}",
+              "sha": "${{ github.sha }}",
+              "actor": "${{ github.actor }}"
+            }' || echo "Webhook not configured"
+
+      - name: Post deployment notice
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const changes = `${{ steps.changes.outputs.changed_files }}`;
+            github.rest.repos.createCommitComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              commit_sha: '${{ github.sha }}',
+              body: `🤖 Botwave Event Handler will be rebuilt with these changes:\n\n\`\`\`\n${changes}\n\`\`\``
+            });

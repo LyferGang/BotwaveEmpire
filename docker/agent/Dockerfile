@@ -41,13 +41,13 @@ RUN mkdir -p /app/data /app/logs /app/vault && \
 USER botwave
 
 # Environment configuration
-ENV PYTHONPATH=/app
+ENV PYTHONPATH=/app/src
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-    CMD python -c "import sys; sys.path.insert(0, '/app'); from src.agents import BusinessAgent; a = BusinessAgent(); print(a.health_check())" || exit 1
+    CMD python -c "from agents.business_agent import BusinessAgent; a = BusinessAgent(); print(a.health_check())" || exit 1
 
 # Default command
-CMD ["python", "-m", "src.agents.business_agent"]
+CMD ["python", "-m", "agents.business_agent"]

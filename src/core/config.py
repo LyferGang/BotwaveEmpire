@@ -22,9 +22,9 @@ class Config:
     LLM_API_KEY: Optional[str] = os.getenv("LLM_API_KEY", "lm-studio")
     LLM_MODEL: str = os.getenv("LLM_MODEL", "qwen3.5-4b-uncensored-hauhaucs-aggressive")
     LLM_TEMPERATURE: float = float(os.getenv("LLM_TEMPERATURE", "0.3"))  # Lower for consistent responses
-    LLM_MAX_TOKENS: int = int(os.getenv("LLM_MAX_TOKENS", "512"))  # Fast response, short answers
-    LLM_CONTEXT_WINDOW: int = int(os.getenv("LLM_CONTEXT_WINDOW", "8192"))  # Match LM Studio setting
-    LLM_REQUEST_TIMEOUT: int = int(os.getenv("LLM_REQUEST_TIMEOUT", "15"))  # Fast fail, 15 seconds
+    LLM_MAX_TOKENS: int = int(os.getenv("LLM_MAX_TOKENS", "4096"))  # Enough for full task completion
+    LLM_CONTEXT_WINDOW: int = int(os.getenv("LLM_CONTEXT_WINDOW", "32768"))  # Match LM Studio max
+    LLM_REQUEST_TIMEOUT: int = int(os.getenv("LLM_REQUEST_TIMEOUT", "60"))  # Allow time for complex tasks
     LLM_PARALLEL_REQUESTS: int = int(os.getenv("LLM_PARALLEL_REQUESTS", "4"))  # Match LM Studio
 
     # Database
@@ -42,9 +42,9 @@ class Config:
     AGENT_LOG_LEVEL: str = os.getenv("AGENT_LOG_LEVEL", "INFO")
 
     # Paths
-    DATA_DIR: Path = Path(os.getenv("DATA_DIR", "/app/data"))
-    LOGS_DIR: Path = Path(os.getenv("LOGS_DIR", "/app/logs"))
-    VAULT_DIR: Path = Path(os.getenv("VAULT_DIR", "/app/vault"))
+    DATA_DIR: Path = Path(os.getenv("DATA_DIR", "data"))
+    LOGS_DIR: Path = Path(os.getenv("LOGS_DIR", "logs"))
+    VAULT_DIR: Path = Path(os.getenv("VAULT_DIR", "vault"))
 
     @classmethod
     def ensure_directories(cls) -> None:

@@ -188,3 +188,20 @@ class IntelligenceAgent(BaseAgent):
                 "llm_connection": "failed",
                 "error": str(e)
             }
+
+
+if __name__ == "__main__":
+    import logging
+    import time
+    import os
+
+    logging.basicConfig(level=logging.INFO)
+    logger = logging.getLogger("intelligence_agent")
+
+    agent = IntelligenceAgent()
+    logger.info(f"Intelligence Agent started - PID {os.getpid()}")
+
+    while True:
+        health = agent.health_check()
+        logger.debug(f"Health check: {health}")
+        time.sleep(30)

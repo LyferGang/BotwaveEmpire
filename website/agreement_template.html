@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Service Agreement | Botwave</title>
+    <script src="https://cdn.jsdelivr.net/npm/signature_pad@4.1.7/dist/signature_pad.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <style>
+        :root {
+            --primary: #6366f1;
+            --secondary: #8b5cf6;
+            --bg: #0f0f23;
+            --bg-card: #1a1a2e;
+            --text: #ffffff;
+            --text-muted: #94a3b8;
+            --border: #333355;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.6;
+            padding: 2rem;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .agreement-header {
+            text-align: center;
+            padding: 2rem 0;
+            border-bottom: 2px solid var(--border);
+            margin-bottom: 2rem;
+        }
+
+        .logo {
+            font-size: 2rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 1rem;
+        }
+
+        .agreement-title {
+            font-size: 1.75rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .agreement-date {
+            color: var(--text-muted);
+        }
+
+        .agreement-content {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 1rem;
+            padding: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        .section {
+            margin-bottom: 1.5rem;
+        }
+
+        .section h3 {
+            color: var(--primary);
+            margin-bottom: 0.75rem;
+            font-size: 1.1rem;
+        }
+
+        .section p {
+            color: var(--text-muted);
+            margin-bottom: 0.5rem;
+        }
+
+        .client-info {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+            background: var(--bg);
+            padding: 1rem;
+            border-radius: 0.5rem;
+            margin: 1rem 0;
+        }
+
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .info-label {
+            color: var(--text-muted);
+            font-size: 0.9rem;
+        }
+
+        .info-value {
+            font-weight: 500;
+        }
+
+        /* Signature */
+        .signature-section {
+            margin-top: 2rem;
+        }
+
+        .signature-pad-container {
+            background: white;
+            border-radius: 0.5rem;
+            margin: 1rem 0;
+        }
+
+        #signature-pad {
+            width: 100%;
+            height: 200px;
+            border-radius: 0.5rem;
+            cursor: crosshair;
+        }
+
+        .signature-actions {
+            display: flex;
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+
+        .btn {
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.5rem;
+            font-size: 0.95rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            border: none;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .btn-secondary {
+            background: var(--bg-hover);
+            color: var(--text);
+            border: 1px solid var(--border);
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 20px rgba(99, 102, 241, 0.4);
+        }
+
+        .btn-success {
+            background: #10b981;
+            color: white;
+        }
+
+        /* Terms */
+        .terms-list {
+            list-style: none;
+            margin: 1rem 0;
+        }
+
+        .terms-list li {
+            padding: 0.5rem 0;
+            padding-left: 1.5rem;
+            position: relative;
+            color: var(--text-muted);
+        }
+
+        .terms-list li::before {
+            content: '•';
+            position: absolute;
+            left: 0;
+            color: var(--primary);
+        }
+
+        .checkbox-confirm {
+            display: flex;
+            align-items: flex-start;
+            gap: 0.75rem;
+            margin: 1.5rem 0;
+            padding: 1rem;
+            background: var(--bg);
+            border-radius: 0.5rem;
+            cursor: pointer;
+        }
+
+        .checkbox-confirm input {
+            margin-top: 4px;
+            accent-color: var(--primary);
+        }
+
+        .checkbox-confirm label {
+            cursor: pointer;
+            color: var(--text-muted);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="agreement-header">
+            <div class="logo">Botwave</div>
+            <h1 class="agreement-title">Service Agreement</h1>
+            <p class="agreement-date">Effective Date: <span id="effectiveDate"></span></p>
+        </div>
+
+        <div class="agreement-content">
+            <div class="section">
+                <h3>1. Parties</h3>
+                <p>This Service Agreement is entered into between:</p>
+                <div class="client-info">
+                    <div>
+                        <div class="info-row">
+                            <span class="info-label">Company:</span>
+                            <span class="info-value" id="clientCompany">Client Company</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label">Contact:</span>
+                            <span class="info-value" id="clientName">Contact Name</span>
+                        </div>
+                    </div>
+                    <div>
+                        <div class="info-row">
+                            <span class="info-label">Email:</span>
+                            <span class="info-value" id="clientEmail">email@company.com</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label">Date:</span>
+                            <span class="info-value" id="agreementDate"></span>
+                        </div>
+                    </div>
+                </div>
+                <p>And <strong>Botwave</strong>, an AI automation services provider.</p>
+            </div>
+
+            <div class="section">
+                <h3>2. Services</h3>
+                <p>Botwave agrees to provide the following AI automation services:</p>
+                <ul class="terms-list" id="servicesList">
+                    <li>Business process automation and optimization</li>
+                    <li>AI agent development and deployment</li>
+                    <li>System monitoring and maintenance</li>
+                    <li>Technical support and consulting</li>
+                </ul>
+            </div>
+
+            <div class="section">
+                <h3>3. Terms & Conditions</h3>
+                <ul class="terms-list">
+                    <li>Service term: Monthly/Annual subscription as selected</li>
+                    <li>Payment terms: Due upon invoice receipt</li>
+                    <li>Cancellation: 30 days written notice required</li>
+                    <li>Data ownership: Client retains all data ownership</li>
+                    <li>Confidentiality: Both parties agree to NDA terms</li>
+                    <li>Limitation of liability: As per standard commercial terms</li>
+                </ul>
+            </div>
+
+            <div class="section">
+                <h3>4. Signatures</h3>
+                <p>By signing below, both parties agree to the terms of this agreement.</p>
+
+                <div class="signature-section">
+                    <p><strong>Client Signature:</strong></p>
+                    <div class="signature-pad-container">
+                        <canvas id="signature-pad"></canvas>
+                    </div>
+                    <div class="signature-actions">
+                        <button class="btn btn-secondary" onclick="clearSignature()">Clear</button>
+                        <button class="btn btn-primary" onclick="downloadPDF()">Download PDF</button>
+                    </div>
+                </div>
+
+                <label class="checkbox-confirm">
+                    <input type="checkbox" id="agreeTerms">
+                    <label for="agreeTerms">I have read and agree to the terms of this Service Agreement</label>
+                </label>
+
+                <button class="btn btn-success" style="width: 100%; margin-top: 1rem;" onclick="submitAgreement()">
+                    Sign Agreement ✓
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Set dates
+        const today = new Date();
+        document.getElementById('effectiveDate').textContent = today.toLocaleDateString('en-US', {
+            year: 'numeric', month: 'long', day: 'numeric'
+        });
+        document.getElementById('agreementDate').textContent = today.toLocaleDateString();
+
+        // Load client data from localStorage
+        const onboardingData = localStorage.getItem('onboardingData');
+        if (onboardingData) {
+            const data = JSON.parse(onboardingData);
+            document.getElementById('clientCompany').textContent = data.companyName || 'Client Company';
+            document.getElementById('clientName').textContent = data.contactName || 'Contact Name';
+            document.getElementById('clientEmail').textContent = data.email || 'email@company.com';
+        }
+
+        // Initialize signature pad
+        const canvas = document.getElementById('signature-pad');
+        const signaturePad = new SignaturePad(canvas, {
+            backgroundColor: 'rgb(255, 255, 255)',
+            penColor: 'rgb(0, 0, 0)'
+        });
+
+        // Resize canvas
+        function resizeCanvas() {
+            const ratio = Math.max(window.devicePixelRatio || 1, 1);
+            canvas.width = canvas.offsetWidth * ratio;
+            canvas.height = canvas.offsetHeight * ratio;
+            canvas.getContext('2d').scale(ratio, ratio);
+            signaturePad.clear();
+        }
+
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+
+        function clearSignature() {
+            signaturePad.clear();
+        }
+
+        function downloadPDF() {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+
+            // Add content
+            doc.setFontSize(20);
+            doc.text('Botwave Service Agreement', 20, 30);
+
+            doc.setFontSize(12);
+            doc.text(`Client: ${document.getElementById('clientCompany').textContent}`, 20, 50);
+            doc.text(`Date: ${document.getElementById('agreementDate').textContent}`, 20, 60);
+
+            // Add signature if exists
+            if (!signaturePad.isEmpty()) {
+                const signatureData = signaturePad.toDataURL();
+                doc.addImage(signatureData, 'PNG', 20, 100, 80, 40);
+            }
+
+            doc.save('Botwave_Service_Agreement.pdf');
+        }
+
+        function submitAgreement() {
+            if (!document.getElementById('agreeTerms').checked) {
+                alert('Please agree to the terms before signing');
+                return;
+            }
+
+            if (signaturePad.isEmpty()) {
+                alert('Please sign the agreement');
+                return;
+            }
+
+            // Save signature
+            const signatureData = signaturePad.toDataURL();
+            localStorage.setItem('agreementSignature', signatureData);
+
+            alert('Agreement signed successfully! Redirecting to status page...');
+            window.location.href = 'onboarding_status.html';
+        }
+    </script>
+</body>
+</html>

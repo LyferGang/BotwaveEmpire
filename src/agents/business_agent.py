@@ -117,3 +117,20 @@ class BusinessAgent(BaseAgent):
             analysis,
             "Data analysis completed"
         )
+
+
+if __name__ == "__main__":
+    import time
+    import os
+
+    logging.basicConfig(level=logging.INFO)
+    logger = logging.getLogger("business_agent")
+
+    agent = BusinessAgent()
+    logger.info(f"Business Agent started - PID {os.getpid()}")
+
+    # Keep agent running for health checks
+    while True:
+        health = agent.health_check()
+        logger.debug(f"Health check: {health}")
+        time.sleep(30)

@@ -1,0 +1,326 @@
+#!/usr/bin/env python3
+"""
+BOTWAVE CLI - Offline AI Assistant
+Exact Claude Code clone - runs 100% local via LM Studio
+
+Usage:
+    botwave                    # Interactive chat mode
+    botwave "your prompt"      # Single prompt
+    botwave edit file.py       # Edit a file
+    botwave run <command>      # Run shell command
+    botwave git status         # Git commands
+"""
+
+import os
+import sys
+import requests
+import subprocess
+import json
+from pathlib import Path
+
+# Configuration - LM Studio local
+LM_STUDIO_URL = os.getenv("LM_STUDIO_URL", "http://localhost:1234/v1")
+MODEL = os.getenv("LM_STUDIO_MODEL", "llama-3.1-8b-instruct-abliterated-obliteratus")
+API_KEY = "not-needed"  # LM Studio doesn't need API key
+
+# Colors (same as Claude Code)
+COLORS = {
+    "reset": "\033[0m",
+    "bold": "\033[1m",
+    "dim": "\033[2m",
+    "blue": "\033[94m",
+    "green": "\033[92m",
+    "yellow": "\033[93m",
+    "red": "\033[91m",
+    "cyan": "\033[96m",
+    "magenta": "\033[95m",
+}
+
+# System prompt - same personality as Claude Code
+SYSTEM_PROMPT = """You are Botwave, an AI coding assistant running 100% offline via LM Studio.
+
+CAPABILITIES:
+- Write and edit code (Python, JavaScript, HTML, CSS, shell scripts)
+- Execute shell commands (user must approve with /approve)
+- Read and write files
+- Git operations (commit, push, diff, log)
+- Debug errors and fix bugs
+- Explain code and architecture
+- Multi-agent parallel execution for large tasks
+
+RULES:
+- Be concise but thorough
+- Show code in markdown blocks with language specifier
+- When suggesting edits, show exact diff
+- When suggesting commands, explain what they do
+- If unsure, say so
+- NEVER make external API calls - everything is local
+- Respect user's filesystem - always confirm before writing
+
+CURRENT DIRECTORY: {cwd}
+DATE: {date}
+""".format(cwd=os.getcwd(), date=Path.cwd())
+
+
+class BotwaveCLI:
+    """Offline AI CLI - Claude Code clone."""
+
+    def __init__(self):
+        self.messages = []
+        self.pending_commands = []
+        self.file_changes = []
+
+    def check_lm_studio(self):
+        """Verify LM Studio is running."""
+        try:
+            resp = requests.get(f"{LM_STUDIO_URL}/models", timeout=5)
+            if resp.status_code == 200:
+                models = resp.json().get("data", [])
+                if models:
+                    print(f"{COLORS['green']}✓ LM Studio connected ({models[0]['id']}){COLORS['reset']}")
+                    return True
+        except:
+            pass
+        print(f"{COLORS['red']}✗ LM Studio not running{COLORS['reset']}")
+        print(f"Start LM Studio server on port 1234")
+        return False
+
+    def chat(self, user_message, stream=True):
+        """Send message to LM Studio and get response."""
+        messages = [{"role": "system", "content": SYSTEM_PROMPT}]
+        messages.extend(self.messages)
+        messages.append({"role": "user", "content": user_message})
+
+        payload = {
+            "model": MODEL,
+            "messages": messages,
+            "stream": stream,
+            "temperature": 0.7,
+            "max_tokens": -1,
+            "context_length": 8192,
+        }
+
+        try:
+            resp = requests.post(
+                f"{LM_STUDIO_URL}/chat/completions",
+                json=payload,
+                stream=stream,
+                timeout=120,
+            )
+
+            if stream:
+                print(f"\n{COLORS['cyan']}Botwave:{COLORS['reset']} ", end="", flush=True)
+                full_response = ""
+
+                for line in resp.iter_lines():
+                    if line:
+                        line_decoded = line.decode("utf-8")
+                        if line_decoded.startswith("data: "):
+                            data = line_decoded[6:]
+                            if data.strip() == "[DONE]":
+                                break
+                            try:
+                                chunk = json.loads(data)
+                                delta = chunk.get("choices", [{}])[0].get("delta", {})
+                                content = delta.get("content", "")
+                                if content:
+                                    full_response += content
+                                    print(content, end="", flush=True)
+                            except json.JSONDecodeError:
+                                pass
+
+                print()
+                self.messages.append({"role": "user", "content": user_message})
+                self.messages.append({"role": "assistant", "content": full_response})
+
+                # Check if AI wants to run commands
+                self.parse_actions(full_response)
+
+                return full_response
+            else:
+                data = resp.json()
+                response = data.get("choices", [{}])[0].get("message", {}).get("content", "")
+                print(f"\n{COLORS['cyan']}Botwave:{COLORS['reset']} {response}")
+                return response
+
+        except requests.exceptions.ConnectionError:
+            return f"{COLORS['red']}Error: Cannot connect to LM Studio{COLORS['reset']}"
+        except Exception as e:
+            return f"{COLORS['red']}Error: {e}{COLORS['reset']}"
+
+    def parse_actions(self, response):
+        """Parse if AI wants to execute commands or edit files."""
+        # Look for command blocks
+        if "```bash" in response or "```sh" in response:
+            import re
+            commands = re.findall(r'```(?:bash|sh)\n(.*?)```', response, re.DOTALL)
+            for cmd in commands:
+                cmd = cmd.strip()
+                if cmd:
+                    self.pending_commands.append(cmd)
+
+    def run_command(self, cmd):
+        """Execute shell command."""
+        print(f"\n{COLORS['dim']}Running: {cmd}{COLORS['reset']}")
+        result = subprocess.run(cmd, shell=True, capture_output=True, text=True)
+        if result.stdout:
+            print(result.stdout)
+        if result.stderr:
+            print(f"{COLORS['red']}STDERR:{COLORS['reset']} {result.stderr}")
+        return result.returncode == 0
+
+    def edit_file(self, filepath, old_text, new_text):
+        """Edit a file."""
+        path = Path(filepath)
+        if not path.exists():
+            print(f"{COLORS['red']}File not found: {filepath}{COLORS['reset']}")
+            return False
+
+        content = path.read_text()
+        if old_text not in content:
+            print(f"{COLORS['yellow']}Text not found in file{COLORS['reset']}")
+            return False
+
+        content = content.replace(old_text, new_text)
+        path.write_text(content)
+        print(f"{COLORS['green']}✓ Edited: {filepath}{COLORS['reset']}")
+        return True
+
+    def git_command(self, cmd):
+        """Run git command."""
+        return self.run_command(f"git {cmd}")
+
+
+def print_banner():
+    """Print welcome banner."""
+    banner = f"""
+{COLORS['cyan']}{COLORS['bold']}╔══════════════════════════════════════════════════════════╗{COLORS['reset']}
+{COLORS['cyan']}{COLORS['bold']}║{COLORS['reset']}  {COLORS['bold']}BOTWAVE CLI - Offline AI Assistant               {COLORS['cyan']}{COLORS['bold']}║{COLORS['reset']}
+{COLORS['cyan']}{COLORS['bold']}║{COLORS['reset']}  100% Local - No API Costs - LM Studio Powered                   {COLORS['cyan']}{COLORS['bold']}║{COLORS['reset']}
+{COLORS['cyan']}{COLORS['bold']}╚══════════════════════════════════════════════════════════╝{COLORS['reset']}
+"""
+    print(banner)
+
+
+def print_help():
+    """Print help."""
+    help_text = f"""
+{COLORS['bold']}COMMANDS:{COLORS['reset']}
+  /help, /h       Show this help
+  /clear          Clear conversation
+  /approve        Approve pending commands
+  /reject         Reject pending commands
+  /git <cmd>      Run git command
+  /edit <file>    Edit a file
+  /run <cmd>      Run shell command
+  /status         Show system status
+  /quit, /exit    Exit
+
+{COLORS['bold']}TIPS:{COLORS['reset']}
+  - Ask Botwave to write code, run commands, or explain things
+  - Use ! before commands: !ls -la
+  - Paste code for analysis
+"""
+    print(help_text)
+
+
+def interactive_mode(cli):
+    """Run interactive mode."""
+    print_banner()
+    print(f"{COLORS['dim']}Type /help for commands, /quit to exit{COLORS['reset']}\n")
+
+    while True:
+        try:
+            # Prompt
+            cwd_short = Path.cwd().name
+            prompt = f"{COLORS['bold']}{COLORS['blue']}┌─[{cwd_short}]{COLORS['reset']}\n"
+            prompt += f"{COLORS['bold']}{COLORS['blue']}└─❯ {COLORS['reset']}"
+
+            user_input = input(prompt).strip()
+
+            if not user_input:
+                continue
+
+            # Commands
+            if user_input.startswith("/"):
+                cmd = user_input[1:].lower().split()
+
+                if cmd[0] in ("quit", "exit", "q"):
+                    print(f"{COLORS['blue']}Goodbye!{COLORS['reset']}")
+                    break
+
+                elif cmd[0] == "help" or cmd[0] == "h":
+                    print_help()
+
+                elif cmd[0] == "clear":
+                    cli.messages = []
+                    print(f"{COLORS['blue']}Conversation cleared{COLORS['reset']}")
+
+                elif cmd[0] == "approve":
+                    if cli.pending_commands:
+                        for c in cli.pending_commands:
+                            cli.run_command(c)
+                        cli.pending_commands = []
+                    else:
+                        print(f"{COLORS['yellow']}No pending commands{COLORS['reset']}")
+
+                elif cmd[0] == "reject":
+                    cli.pending_commands = []
+                    print(f"{COLORS['yellow']}Commands rejected{COLORS['reset']}")
+
+                elif cmd[0] == "run" and len(cmd) > 1:
+                    cli.run_command(" ".join(cmd[1:]))
+
+                elif cmd[0] == "git" and len(cmd) > 1:
+                    cli.git_command(" ".join(cmd[1:]))
+
+                elif cmd[0] == "status":
+                    print(f"\n{COLORS['bold']}System Status:{COLORS['reset']}")
+                    print(f"  Model: {MODEL}")
+                    print(f"  LM Studio: {LM_STUDIO_URL}")
+                    print(f"  Messages in context: {len(cli.messages)}")
+                    print(f"  Pending commands: {len(cli.pending_commands)}")
+
+                else:
+                    print(f"{COLORS['yellow']}Unknown command: {user_input}{COLORS['reset']}")
+
+            # Shell commands with !
+            elif user_input.startswith("!"):
+                cmd = user_input[1:].strip()
+                cli.run_command(cmd)
+
+            # Regular chat
+            else:
+                cli.chat(user_input)
+
+        except KeyboardInterrupt:
+            print(f"\n{COLORS['yellow']}Interrupted. Type /quit to exit.{COLORS['reset']}")
+        except EOFError:
+            break
+
+
+def main():
+    cli = BotwaveCLI()
+
+    # Check LM Studio
+    if not cli.check_lm_studio():
+        sys.exit(1)
+
+    # Run mode
+    if len(sys.argv) == 1:
+        interactive_mode(cli)
+
+    elif sys.argv[1] in ("-i", "--interactive"):
+        interactive_mode(cli)
+
+    elif sys.argv[1] in ("-h", "--help"):
+        print_help()
+
+    else:
+        # Single prompt
+        prompt = " ".join(sys.argv[1:])
+        cli.chat(prompt)
+
+
+if __name__ == "__main__":
+    main()

@@ -1,0 +1,13 @@
+{
+  "id": "1b8b1e561258",
+  "name": "plumbing_bot_appointments",
+  "task": "Add appointment scheduling with calendar integration and reminders",
+  "files": [
+    "botwave_plumbing_bot.py"
+  ],
+  "instructions": null,
+  "skill": null,
+  "skill_instructions": "",
+  "created_at": "20260330_045805",
+  "status": "pending"
+}

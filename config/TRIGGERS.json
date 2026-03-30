@@ -1,0 +1,18 @@
+[
+  {
+    "name": "New Lead Webhook",
+    "path": "/webhook/new-lead",
+    "secret": "change-this-secret",
+    "task": "Process new lead from website form",
+    "files": ["data/leads.db", "dashboard/web_app.py"],
+    "instructions": "When a new lead comes in via webhook, add it to the database and send a welcome message."
+  },
+  {
+    "name": "Quote Request",
+    "path": "/webhook/quote-request",
+    "secret": "change-this-secret",
+    "task": "Generate quote for customer request",
+    "files": ["plumbing_telegram_bot.py"],
+    "instructions": "Parse the quote request details and generate a professional quote response."
+  }
+]

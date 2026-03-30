@@ -1,0 +1,13 @@
+{
+  "id": "f7034b9fe8dc",
+  "name": "plumbing_bot_ai_rag",
+  "task": "Add AI responses with RAG knowledge base for plumbing FAQs, pricing, common issues",
+  "files": [
+    "botwave_plumbing_bot.py"
+  ],
+  "instructions": null,
+  "skill": null,
+  "skill_instructions": "",
+  "created_at": "20260330_045805",
+  "status": "pending"
+}

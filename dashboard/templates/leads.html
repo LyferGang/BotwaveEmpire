@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Lead Management - Botwave</title>
+    <meta charset="UTF-8">
+    <style>
+        body { font-family: system-ui, sans-serif; background: #0f0f0f; color: #fff; padding: 20px; }
+        .container { max-width: 1000px; margin: 0 auto; }
+        h1 { color: #3b82f6; margin-bottom: 20px; }
+        .lead-card { background: #1a1a2e; border-radius: 8px; padding: 16px; margin-bottom: 16px; border: 1px solid #2a2a3e; }
+        .lead-card.new { border-color: #10b981; }
+        .lead-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+        .lead-name { font-size: 1.25rem; font-weight: 600; }
+        .lead-status { padding: 4px 12px; border-radius: 20px; font-size: 0.75rem; }
+        .status-new { background: #10b981; }
+        .status-contacted { background: #f59e0b; }
+        .status-converted { background: #3b82f6; }
+        .lead-details { color: #888; font-size: 0.9rem; }
+        .lead-actions { margin-top: 12px; }
+        .btn { padding: 8px 16px; border-radius: 6px; border: none; cursor: pointer; font-weight: 500; }
+        .btn-primary { background: #3b82f6; color: white; }
+        .btn-success { background: #10b981; color: white; }
+        .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 32px; }
+        .stat-card { background: #16213e; padding: 20px; border-radius: 8px; text-align: center; }
+        .stat-value { font-size: 2rem; font-weight: 700; color: #3b82f6; }
+        .stat-label { color: #888; font-size: 0.9rem; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎯 Lead Management</h1>
+
+        <div class="stats">
+            <div class="stat-card">
+                <div class="stat-value" id="total-leads">0</div>
+                <div class="stat-label">Total Leads</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="new-leads">0</div>
+                <div class="stat-label">New Today</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="contacted">0</div>
+                <div class="stat-label">Contacted</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="converted">0</div>
+                <div class="stat-label">Converted</div>
+            </div>
+        </div>
+
+        <div id="leads-list"></div>
+    </div>
+
+    <script>
+        async function loadLeads() {
+            const res = await fetch('/api/leads');
+            const data = await res.json();
+
+            document.getElementById('total-leads').textContent = data.count;
+
+            const list = document.getElementById('leads-list');
+            list.innerHTML = data.leads.map(lead => `
+                <div class="lead-card ${lead.status}">
+                    <div class="lead-header">
+                        <span class="lead-name">${lead.name}</span>
+                        <span class="lead-status status-${lead.status}">${lead.status}</span>
+                    </div>
+                    <div class="lead-details">
+                        📞 ${lead.phone || 'No phone'} | ✉️ ${lead.email || 'No email'}<br>
+                        💼 Interested in: ${lead.service_interest || 'General'}<br>
+                        📝 ${lead.message || 'No message'}<br>
+                        <small>Received: ${lead.created_at}</small>
+                    </div>
+                    <div class="lead-actions">
+                        <button class="btn btn-success" onclick="markContacted('${lead.id}')">Mark Contacted</button>
+                        <button class="btn btn-primary" onclick="window.open('https://t.me/+${lead.phone}')">Telegram</button>
+                        <button class="btn btn-primary" onclick="window.open('tel:${lead.phone}')">Call</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        async function markContacted(leadId) {
+            // TODO: Implement status update endpoint
+            alert('Marked as contacted: ' + leadId);
+            loadLeads();
+        }
+
+        loadLeads();
+        setInterval(loadLeads, 30000); // Refresh every 30 seconds
+    </script>
+</body>
+</html>

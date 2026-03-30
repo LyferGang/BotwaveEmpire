@@ -1,0 +1,16 @@
+[
+  {
+    "name": "Daily Lead Follow-up",
+    "schedule": "0 9 * * *",
+    "task": "Review new leads from the website and send follow-up messages",
+    "files": ["data/leads.db"],
+    "instructions": "Check for new leads that haven't been contacted yet. Send a personalized follow-up message via Telegram or email."
+  },
+  {
+    "name": "Weekly Report Generator",
+    "schedule": "0 8 * * 1",
+    "task": "Generate weekly business report",
+    "files": ["dashboard/", "data/"],
+    "instructions": "Create a PDF report with weekly metrics: new customers, quotes sent, appointments booked, revenue."
+  }
+]

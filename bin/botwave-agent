@@ -1,0 +1,391 @@
+#!/usr/bin/env python3
+"""
+BOTWAVE AGENT - TUI Chat Interface
+Talk to your local AI agent like Claude Code
+
+Usage:
+    botwave-agent              # Interactive TUI mode
+    botwave-agent "prompt"     # Single prompt
+    botwave-agent --model      # Select model
+"""
+
+import sys
+import os
+import json
+import requests
+from pathlib import Path
+from datetime import datetime
+
+# Configuration
+LM_STUDIO_BASE = os.getenv("LM_STUDIO_URL", "http://localhost:1234/v1")
+DEFAULT_MODEL = os.getenv("LM_STUDIO_MODEL", "qwen3.5-4b-uncensored-hauhaucs-aggressive")
+HISTORY_FILE = Path.home() / ".botwave" / "agent_history.json"
+
+# ANSI Colors
+class Colors:
+    RESET = "\033[0m"
+    BOLD = "\033[1m"
+    DIM = "\033[2m"
+    BLUE = "\033[94m"
+    GREEN = "\033[92m"
+    YELLOW = "\033[93m"
+    RED = "\033[91m"
+    CYAN = "\033[96m"
+    MAGENTA = "\033[95m"
+    BG_BLUE = "\033[44m"
+    BG_RESET = "\033[49m"
+
+
+class BotwaveAgent:
+    def __init__(self, model=None):
+        self.model = model or DEFAULT_MODEL
+        self.messages = []
+        self.history = []
+        self.load_history()
+
+        # System prompt for coding assistant
+        self.system_prompt = """You are BOTWAVE AGENT, an AI coding assistant running locally via LM Studio.
+
+CAPABILITIES:
+- Write and edit Python, JavaScript, HTML, CSS, and shell scripts
+- Help with git commands and version control
+- Debug errors and fix bugs
+- Explain code and architecture
+- Run commands and analyze output
+
+RULES:
+- Be concise but thorough
+- Show code in markdown blocks with language specifier
+- When suggesting file edits, show the exact changes
+- When suggesting commands, explain what they do
+- If unsure, say so
+
+CURRENT DIRECTORY: {cwd}
+DATE: {date}
+""".format(
+            cwd=os.getcwd(),
+            date=datetime.now().strftime("%Y-%m-%d")
+        )
+
+    def load_history(self):
+        """Load conversation history."""
+        if HISTORY_FILE.exists():
+            try:
+                with open(HISTORY_FILE) as f:
+                    data = json.load(f)
+                    self.history = data.get("conversations", [])[-10:]  # Last 10 convos
+            except:
+                pass
+
+    def save_history(self):
+        """Save conversation history."""
+        HISTORY_FILE.parent.mkdir(parents=True, exist_ok=True)
+        with open(HISTORY_FILE, "w") as f:
+            json.dump({
+                "conversations": self.history,
+                "last_updated": datetime.now().isoformat()
+            }, f, indent=2)
+
+    def get_models(self):
+        """Fetch available models."""
+        try:
+            resp = requests.get(f"{LM_STUDIO_BASE}/models", timeout=5)
+            if resp.status_code == 200:
+                return [m["id"] for m in resp.json().get("data", [])]
+        except:
+            pass
+        return []
+
+    def chat(self, user_message, stream=True):
+        """Send message and get response."""
+        # Build messages array
+        messages = [{"role": "system", "content": self.system_prompt}]
+        messages.extend(self.messages)
+        messages.append({"role": "user", "content": user_message})
+
+        payload = {
+            "model": self.model,
+            "messages": messages,
+            "stream": stream,
+            "temperature": 0.7,
+            "max_tokens": -1,
+            "context_length": 8192,
+        }
+
+        try:
+            resp = requests.post(
+                f"{LM_STUDIO_BASE}/chat/completions",
+                json=payload,
+                stream=stream,
+                timeout=120,
+            )
+
+            if stream:
+                print(f"\n{Colors.CYAN}BOTWAVE:{Colors.RESET} ", end="", flush=True)
+                full_response = ""
+
+                for line in resp.iter_lines():
+                    if line:
+                        line_decoded = line.decode("utf-8")
+                        if line_decoded.startswith("data: "):
+                            data = line_decoded[6:]
+                            if data.strip() == "[DONE]":
+                                break
+                            try:
+                                chunk = json.loads(data)
+                                delta = chunk.get("choices", [{}])[0].get("delta", {})
+                                content = delta.get("content", "")
+                                if content:
+                                    full_response += content
+                                    print(content, end="", flush=True)
+                            except json.JSONDecodeError:
+                                pass
+
+                print()  # Newline after streaming
+
+                # Save to conversation history
+                self.messages.append({"role": "user", "content": user_message})
+                self.messages.append({"role": "assistant", "content": full_response})
+
+                return full_response
+            else:
+                data = resp.json()
+                response = data.get("choices", [{}])[0].get("message", {}).get("content", "")
+                print(f"\n{Colors.CYAN}BOTWAVE:{Colors.RESET} {response}")
+                return response
+
+        except requests.exceptions.ConnectionError:
+            return f"{Colors.RED}Error: Cannot connect to LM Studio. Is it running?{Colors.RESET}"
+        except Exception as e:
+            return f"{Colors.RED}Error: {e}{Colors.RESET}"
+
+    def clear(self):
+        """Clear conversation history."""
+        self.messages = []
+        print(f"{Colors.BLUE}Conversation cleared.{Colors.RESET}")
+
+    def status(self):
+        """Show status info."""
+        models = self.get_models()
+        print(f"\n{Colors.BOLD}BOTWAVE AGENT STATUS{Colors.RESET}")
+        print(f"  Model: {Colors.GREEN}{self.model}{Colors.RESET}")
+        print(f"  Available models: {len(models)}")
+        print(f"  Messages in context: {len(self.messages)}")
+        print(f"  LM Studio: {Colors.GREEN}Connected{Colors.RESET}")
+        print(f"  History file: {HISTORY_FILE}")
+
+
+def print_banner():
+    """Print welcome banner."""
+    banner = f"""
+{Colors.CYAN}{Colors.BOLD}╔══════════════════════════════════════════════════════════════╗{Colors.RESET}
+{Colors.CYAN}{Colors.BOLD}║{Colors.RESET}  {Colors.BOLD}BOTWAVE AGENT - Local AI Coding Assistant              {Colors.CYAN}{Colors.BOLD}║{Colors.RESET}
+{Colors.CYAN}{Colors.BOLD}║{Colors.RESET}  Powered by LM Studio + Local LLM                                  {Colors.CYAN}{Colors.BOLD}║{Colors.RESET}
+{Colors.CYAN}{Colors.BOLD}╚══════════════════════════════════════════════════════════════╝{Colors.RESET}
+"""
+    print(banner)
+
+
+def print_help():
+    """Print help message."""
+    help_text = """
+COMMANDS:
+  /help, /h       Show this help message
+  /clear          Clear conversation history
+  /status         Show status and model info
+  /models         List available models
+  /model <name>   Switch to a different model
+  /save           Save conversation to file
+  /load           Load last conversation
+  /quit, /exit, q Exit the agent
+
+TIPS:
+  - Use !command to run shell commands (e.g., !ls -la)
+  - Paste code directly for analysis
+  - Ask about files in current directory
+"""
+    print(help_text)
+
+
+def run_shell_command(cmd):
+    """Run a shell command and return output."""
+    import subprocess
+    try:
+        result = subprocess.run(
+            cmd,
+            shell=True,
+            capture_output=True,
+            text=True,
+            timeout=30,
+            cwd=os.getcwd()
+        )
+        output = result.stdout
+        if result.stderr:
+            output += f"\nSTDERR:\n{result.stderr}"
+        return output
+    except subprocess.TimeoutExpired:
+        return "Command timed out after 30 seconds"
+    except Exception as e:
+        return f"Error: {e}"
+
+
+def interactive_mode(agent):
+    """Run interactive TUI mode."""
+    print_banner()
+    agent.status()
+    print(f"\n{Colors.DIM}Type /help for commands, /quit to exit{Colors.RESET}\n")
+
+    while True:
+        try:
+            # Prompt with directory indicator
+            cwd_short = Path.cwd().name
+            prompt = f"{Colors.BOLD}{Colors.BLUE}┌─[{cwd_short}]{Colors.RESET}\n"
+            prompt += f"{Colors.BOLD}{Colors.BLUE}└─❯ {Colors.RESET}"
+
+            user_input = input(prompt).strip()
+
+            if not user_input:
+                continue
+
+            # Handle commands
+            if user_input.startswith("/"):
+                cmd = user_input[1:].lower().split()
+
+                if cmd[0] in ("quit", "exit", "q"):
+                    agent.save_history()
+                    print(f"{Colors.BLUE}Goodbye!{Colors.RESET}")
+                    break
+
+                elif cmd[0] == "help":
+                    print_help()
+
+                elif cmd[0] == "clear":
+                    agent.clear()
+
+                elif cmd[0] == "status":
+                    agent.status()
+
+                elif cmd[0] == "models":
+                    models = agent.get_models()
+                    print(f"\n{Colors.BOLD}Available Models:{Colors.RESET}")
+                    for m in models:
+                        marker = "✓" if m == agent.model else " "
+                        print(f"  {Colors.GREEN}{marker}{Colors.RESET} {m}")
+
+                elif cmd[0] == "model" and len(cmd) > 1:
+                    new_model = " ".join(cmd[1:])
+                    models = agent.get_models()
+                    if new_model in models:
+                        agent.model = new_model
+                        print(f"{Colors.GREEN}Switched to: {new_model}{Colors.RESET}")
+                    else:
+                        print(f"{Colors.YELLOW}Model not found. Use /models to see available.{Colors.RESET}")
+
+                elif cmd[0] == "save":
+                    filename = f"botwave_convo_{datetime.now().strftime('%Y%m%d_%H%M%S')}.txt"
+                    with open(filename, "w") as f:
+                        for msg in agent.messages:
+                            role = msg["role"].upper()
+                            f.write(f"=== {role} ===\n{msg['content']}\n\n")
+                    print(f"{Colors.GREEN}Saved to: {filename}{Colors.RESET}")
+
+                elif cmd[0] == "load":
+                    if agent.history:
+                        print(f"{Colors.BLUE}Loaded previous conversation{Colors.RESET}")
+                        agent.messages = agent.history[-1].get("messages", []) if agent.history else []
+                    else:
+                        print(f"{Colors.YELLOW}No history to load{Colors.RESET}")
+
+                else:
+                    print(f"{Colors.YELLOW}Unknown command: {user_input}{Colors.RESET}")
+                    print_help()
+
+            # Handle shell commands
+            elif user_input.startswith("!"):
+                cmd = user_input[1:].strip()
+                print(f"{Colors.DIM}Running: {cmd}{Colors.RESET}")
+                output = run_shell_command(cmd)
+                print(f"\n{output}")
+
+                # Optionally send output to AI for analysis
+                if len(output) < 5000:
+                    follow_up = input(f"\n{Colors.GREEN}Send output to AI for analysis? (y/n): {Colors.RESET}").strip()
+                    if follow_up.lower() == "y":
+                        agent.chat(f"Here's the output from running `{cmd}`:\n\n{output}\n\nWhat does this mean?")
+
+            # Regular chat
+            else:
+                agent.chat(user_input)
+
+        except KeyboardInterrupt:
+            print(f"\n{Colors.YELLOW}Interrupted. Type /quit to exit.{Colors.RESET}")
+        except EOFError:
+            agent.save_history()
+            break
+
+
+def main():
+    # Check LM Studio connection first
+    try:
+        resp = requests.get(f"{LM_STUDIO_BASE}/models", timeout=5)
+        if resp.status_code != 200:
+            raise Exception("Bad response")
+        models = resp.json().get("data", [])
+        if not models:
+            raise Exception("No models loaded")
+    except Exception as e:
+        print(f"{Colors.RED}╔════════════════════════════════════════════╗{Colors.RESET}")
+        print(f"{Colors.RED}║  ERROR: Cannot connect to LM Studio        ║{Colors.RESET}")
+        print(f"{Colors.RED}╚════════════════════════════════════════════╝{Colors.RESET}")
+        print(f"\n{Colors.YELLOW}Make sure LM Studio server is running on port 1234{Colors.RESET}")
+        print(f"{Colors.YELLOW}Start LM Studio and load a model first.{Colors.RESET}")
+        sys.exit(1)
+
+    # Parse arguments
+    agent = BotwaveAgent()
+
+    if len(sys.argv) == 1:
+        # Interactive mode
+        interactive_mode(agent)
+
+    elif sys.argv[1] in ("-i", "--interactive"):
+        interactive_mode(agent)
+
+    elif sys.argv[1] in ("-s", "--models"):
+        print(f"{Colors.BOLD}Available Models:{Colors.RESET}")
+        for model in agent.get_models():
+            print(f"  - {model}")
+
+    elif sys.argv[1] in ("-h", "--help"):
+        print(f"""{Colors.BOLD}BOTWAVE AGENT - Local AI Coding Assistant{Colors.RESET}
+
+{Colors.BOLD}Usage:{Colors.RESET}
+  botwave-agent              [interactive TUI mode]
+  botwave-agent "prompt"     [single prompt]
+  botwave-agent [options]
+
+{Colors.BOLD}Options:{Colors.RESET}
+  -i, --interactive   Start interactive TUI mode
+  -s, --models        List available models
+  -m, --model NAME    Use specific model
+  -h, --help          Show this help
+
+{Colors.BOLD}Interactive Commands:{Colors.RESET}
+  /help, /clear, /status, /models, /model <name>
+  /save, /load, /quit
+  !command   [run shell command]
+
+{Colors.BOLD}Environment:{Colors.RESET}
+  LM_STUDIO_URL     (default: http://localhost:1234/v1)
+  LM_STUDIO_MODEL   (default: qwen3.5-4b-uncensored-hauhaucs-aggressive)
+""")
+
+    else:
+        # Single prompt mode
+        prompt = " ".join(sys.argv[1:])
+        print(f"{Colors.CYAN}BOTWAVE:{Colors.RESET} ", end="", flush=True)
+        agent.chat(prompt, stream=True)
+
+
+if __name__ == "__main__":
+    main()

@@ -1,0 +1,248 @@
+#!/usr/bin/env python3
+"""
+LM Studio Model Manager
+Unload/load models to manage VRAM usage
+"""
+
+import sys
+import requests
+import json
+
+LM_STUDIO_BASE = "http://localhost:1234/v1"
+
+class Colors:
+    RESET = "\033[0m"
+    BOLD = "\033[1m"
+    GREEN = "\033[92m"
+    RED = "\033[91m"
+    YELLOW = "\033[93m"
+    CYAN = "\033[96m"
+
+
+def get_loaded_models():
+    """Get currently loaded models."""
+    try:
+        resp = requests.get(f"{LM_STUDIO_BASE}/models", timeout=5)
+        if resp.status_code == 200:
+            return [m["id"] for m in resp.json().get("data", [])]
+    except:
+        pass
+    return []
+
+
+def unload_model(model_name):
+    """Unload a specific model from VRAM."""
+    try:
+        # LM Studio uses the context endpoint to manage loaded models
+        resp = requests.post(
+            f"{LM_STUDIO_BASE}/context/unload",
+            json={"model": model_name},
+            timeout=10
+        )
+        if resp.status_code == 200:
+            print(f"{Colors.GREEN}✓ Unloaded: {model_name}{Colors.RESET}")
+            return True
+        else:
+            print(f"{Colors.YELLOW}! Could not unload: {model_name}{Colors.RESET}")
+            return False
+    except Exception as e:
+        print(f"{Colors.RED}Error: {e}{Colors.RESET}")
+        return False
+
+
+def load_model(model_name):
+    """Load a model into VRAM."""
+    try:
+        resp = requests.post(
+            f"{LM_STUDIO_BASE}/context/load",
+            json={"model": model_name},
+            timeout=10
+        )
+        if resp.status_code == 200:
+            print(f"{Colors.GREEN}✓ Loaded: {model_name}{Colors.RESET}")
+            return True
+        else:
+            print(f"{Colors.YELLOW}! Could not load: {model_name}{Colors.RESET}")
+            return False
+    except Exception as e:
+        print(f"{Colors.RED}Error: {e}{Colors.RESET}")
+        return False
+
+
+def show_status():
+    """Show current model status and VRAM."""
+    import subprocess
+
+    print(f"\n{Colors.BOLD}═══ LM STUDIO MODEL MANAGER ═══{Colors.RESET}\n")
+
+    # Get loaded models
+    models = get_loaded_models()
+    print(f"{Colors.CYAN}Loaded Models ({len(models)}):{Colors.RESET}")
+    for m in models:
+        print(f"  • {m}")
+
+    # Get VRAM info
+    try:
+        result = subprocess.run(
+            ["nvidia-smi", "--query-gpu=memory.total,memory.used,memory.free", "--format=csv,noheader"],
+            capture_output=True, text=True
+        )
+        if result.returncode == 0:
+            total, used, free = result.stdout.strip().split(", ")
+            used_gb = int(used.split()[0]) / 1024
+            free_gb = int(free.split()[0]) / 1024
+            total_gb = int(total.split()[0]) / 1024
+
+            print(f"\n{Colors.CYAN}VRAM Usage:{Colors.RESET}")
+            bar_len = 40
+            filled = int((used_gb / total_gb) * bar_len)
+            bar = "█" * filled + "░" * (bar_len - filled)
+
+            color = Colors.GREEN
+            if used_gb > 7:
+                color = Colors.RED
+            elif used_gb > 6:
+                color = Colors.YELLOW
+
+            print(f"  {color}{bar}{Colors.RESET} {used_gb:.1f}GB / {total_gb:.1f}GB")
+            print(f"  Free: {free_gb:.1f}GB")
+    except:
+        pass
+
+    print()
+
+
+def recommend_config():
+    """Recommend optimal model configuration."""
+    models = get_loaded_models()
+
+    print(f"\n{Colors.BOLD}═══ RECOMMENDED CONFIGURATION ═══{Colors.RESET}\n")
+
+    # Check current VRAM usage
+    try:
+        import subprocess
+        result = subprocess.run(
+            ["nvidia-smi", "--query-gpu=memory.used", "--format=csv,noheader"],
+            capture_output=True, text=True
+        )
+        used_mb = int(result.stdout.strip().split()[0])
+        used_gb = used_mb / 1024
+
+        if used_gb > 7.5:
+            print(f"{Colors.RED}⚠ CRITICAL: VRAM at {used_gb:.1f}GB - Unload models immediately!{Colors.RESET}")
+        elif used_gb > 6.5:
+            print(f"{Colors.YELLOW}⚠ WARNING: VRAM at {used_gb:.1f}GB - Consider unloading{Colors.RESET}")
+        else:
+            print(f"{Colors.GREEN}✓ VRAM healthy at {used_gb:.1f}GB{Colors.RESET}")
+
+    except:
+        pass
+
+    print(f"""
+{Colors.BOLD}Recommended Setup for 8GB VRAM:{Colors.RESET}
+
+1. PRIMARY MODEL (keep loaded):
+   → qwen3.5-4b-uncensored-hauhaucs-aggressive
+   - Fast responses for chat/coding
+   - Uses ~3-4GB VRAM
+   - Leaves room for context
+
+2. OPTIONAL SECONDARY (load when needed):
+   → qwen3vl-8b-uncensored-hauhaucs-balanced
+   - Better for complex reasoning
+   - Uses ~6-7GB VRAM
+   - Unload 4B when using this
+
+3. UNLOAD THESE (to free VRAM):
+   - meta-llama-3-8b-instruct
+   - llama-3.1-8b-instruct-abliterated
+   - text-embedding-nomic-embed-text-v1.5
+
+{Colors.BOLD}Commands:{Colors.RESET}
+  {Colors.GREEN}lm-model-manager unload <model>{Colors.RESET}
+  {Colors.GREEN}lm-model-manager load <model>{Colors.RESET}
+  {Colors.GREEN}lm-model-manager optimize{Colors.RESET}  (auto-optimize)
+""")
+
+
+def optimize():
+    """Automatically optimize model loading."""
+    print(f"\n{Colors.CYAN}═══ OPTIMIZING MODEL CONFIGURATION ═══{Colors.RESET}\n")
+
+    models = get_loaded_models()
+
+    # Models to keep
+    keep = ["qwen3.5-4b-uncensored-hauhaucs-aggressive"]
+
+    # Models to unload
+    unload_list = [
+        "meta-llama-3-8b-instruct",
+        "llama-3.1-8b-instruct-abliterated-obliteratus",
+        "text-embedding-nomic-embed-text-v1.5"
+    ]
+
+    for model in models:
+        if model in unload_list:
+            unload_model(model)
+
+    print(f"\n{Colors.GREEN}✓ Optimization complete{Colors.RESET}")
+    print(f"  Keeping: qwen3.5-4b-uncensored-hauhaucs-aggressive")
+    print(f"  Use 'lm-model-manager load <model>' to load others as needed")
+
+
+def main():
+    if len(sys.argv) == 1:
+        show_status()
+        recommend_config()
+        return
+
+    cmd = sys.argv[1].lower()
+
+    if cmd == "status":
+        show_status()
+
+    elif cmd == "list":
+        models = get_loaded_models()
+        print(f"Loaded models ({len(models)}):")
+        for m in models:
+            print(f"  - {m}")
+
+    elif cmd == "unload" and len(sys.argv) > 2:
+        model = " ".join(sys.argv[2:])
+        unload_model(model)
+
+    elif cmd == "load" and len(sys.argv) > 2:
+        model = " ".join(sys.argv[2:])
+        load_model(model)
+
+    elif cmd == "optimize":
+        optimize()
+
+    elif cmd in ("help", "-h", "--help"):
+        print(f"""{Colors.BOLD}LM Studio Model Manager{Colors.RESET}
+
+{Colors.BOLD}Usage:{Colors.RESET}
+  lm-model-manager [command] [options]
+
+{Colors.BOLD}Commands:{Colors.RESET}
+  status              Show loaded models and VRAM
+  list                List loaded models
+  unload <model>      Unload a model from VRAM
+  load <model>        Load a model into VRAM
+  optimize            Auto-optimize for 8GB VRAM
+  recommend           Show recommendations
+  help                Show this help
+
+{Colors.BOLD}Examples:{Colors.RESET}
+  lm-model-manager unload meta-llama-3-8b-instruct
+  lm-model-manager load qwen3vl-8b-uncensored-hauhaucs-balanced
+  lm-model-manager optimize
+""")
+
+    else:
+        show_status()
+        recommend_config()
+
+
+if __name__ == "__main__":
+    main()

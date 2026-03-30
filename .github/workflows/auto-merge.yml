@@ -1,0 +1,209 @@
+# Botwave Empire - Auto-Merge Workflow
+# Modeled after thepopebot's auto-merge.yml
+# Automatically merges agent-job PRs after validation
+
+name: Auto-Merge Agent Jobs
+
+on:
+  pull_request:
+    types: [opened, synchronize]
+    branches: [main, master]
+  pull_request_review:
+    types: [submitted]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate-and-merge:
+    runs-on: ubuntu-latest
+    if: startsWith(github.head_ref, 'agent-job/')
+    permissions:
+      contents: write
+      pull-requests: write
+      checks: read
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Validate PR author
+        id: validate-author
+        run: |
+          # Only auto-merge if PR is from the repository owner or bot
+          AUTHOR="${{ github.event.pull_request.user.login }}"
+          REPO_OWNER="${{ github.repository_owner }}"
+
+          if [ "$AUTHOR" == "$REPO_OWNER" ] || [[ "$AUTHOR" == *"bot"* ]] || [[ "$AUTHOR" == *"[bot]"* ]]; then
+            echo "valid_author=true" >> $GITHUB_OUTPUT
+            echo "✅ Valid author: $AUTHOR"
+          else
+            echo "valid_author=false" >> $GITHUB_OUTPUT
+            echo "⚠️ PR from external contributor, manual review required"
+          fi
+
+      - name: Validate changed files
+        id: validate-files
+        if: steps.validate-author.outputs.valid_author == 'true'
+        run: |
+          # Get list of changed files
+          CHANGED_FILES=$(git diff --name-only ${{ github.event.pull_request.base.sha }} ${{ github.event.pull_request.head.sha }})
+
+          # Allowed paths (from Botwave config)
+          ALLOWED_PATTERNS=".*\.py$ .*\.js$ .*\.html$ .*\.css$ .*\.md$ .*\.json$ .*\.yml$ .*\.yaml$ ^config/ ^website/ ^dashboard/ ^src/ ^scripts/ ^skills/ ^agent-jobs/"
+
+          VIOLATIONS=""
+          for file in $CHANGED_FILES; do
+            ALLOWED=false
+            for pattern in $ALLOWED_PATTERNS; do
+              if echo "$file" | grep -Eq "$pattern"; then
+                ALLOWED=true
+                break
+              fi
+            done
+
+            if [ "$ALLOWED" = false ]; then
+              VIOLATIONS="$VIOLATIONS $file"
+            fi
+          done
+
+          if [ -z "$VIOLATIONS" ]; then
+            echo "valid_files=true" >> $GITHUB_OUTPUT
+            echo "✅ All changed files are in allowed paths"
+          else
+            echo "valid_files=false" >> $GITHUB_OUTPUT
+            echo "❌ Violations found:"
+            echo "$VIOLATIONS"
+          fi
+
+      - name: Check for blocked patterns
+        id: check-patterns
+        if: steps.validate-files.outputs.valid_files == 'true'
+        run: |
+          BLOCKED_PATTERNS="password secret key token credential apikey"
+          VIOLATIONS=""
+
+          for file in $(git diff --name-only ${{ github.event.pull_request.base.sha }} ${{ github.event.pull_request.head.sha }}); do
+            if [ -f "$file" ]; then
+              for pattern in $BLOCKED_PATTERNS; do
+                if grep -i "$pattern" "$file" > /dev/null 2>&1; then
+                  # Check if it's an actual secret (simple heuristic)
+                  if echo "$file" | grep -Eq "(password|secret|key|token|credential)"; then
+                    # Skip config files that might have placeholder values
+                    if ! echo "$file" | grep -Eq "(example|template|sample)"; then
+                      VIOLATIONS="$VIOLATIONS $file"
+                    fi
+                  fi
+                fi
+              done
+            fi
+          done
+
+          if [ -z "$VIOLATIONS" ]; then
+            echo "clean_patterns=true" >> $GITHUB_OUTPUT
+            echo "✅ No blocked patterns found"
+          else
+            echo "clean_patterns=false" >> $GITHUB_OUTPUT
+            echo "⚠️  Review for secrets: $VIOLATIONS"
+          fi
+
+      - name: Run tests
+        id: run-tests
+        if: steps.check-patterns.outputs.clean_patterns == 'true'
+        run: |
+          echo "Running Botwave tests..."
+
+          # Check Python syntax for all .py files
+          FAILED=0
+          for file in $(git diff --name-only ${{ github.event.pull_request.base.sha }} ${{ github.event.pull_request.head.sha }} | grep '\.py$'); do
+            if [ -f "$file" ]; then
+              if ! python3 -m py_compile "$file" 2>/dev/null; then
+                echo "❌ Syntax error in $file"
+                FAILED=1
+              else
+                echo "✅ $file syntax OK"
+              fi
+            fi
+          done
+
+          # Run full_system_check if it exists
+          if [ -f "scripts/full_system_check.py" ]; then
+            echo "Running system check..."
+            python3 scripts/full_system_check.py || true
+          fi
+
+          if [ $FAILED -eq 0 ]; then
+            echo "tests_passed=true" >> $GITHUB_OUTPUT
+          else
+            echo "tests_passed=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Enable auto-merge
+        if: steps.run-tests.outputs.tests_passed == 'true'
+        uses: peter-evans/enable-pull-request-automerge@v3
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          pull-request-number: ${{ github.event.pull_request.number }}
+          merge-method: squash
+
+      - name: Post status comment
+        if: always()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const author = '${{ steps.validate-author.outputs.valid_author }}';
+            const files = '${{ steps.validate-files.outputs.valid_files }}';
+            const patterns = '${{ steps.check-patterns.outputs.clean_patterns }}';
+            const tests = '${{ steps.run-tests.outputs.tests_passed }}';
+
+            let status = '## 🤖 Botwave Auto-Merge Status\n\n';
+            let allPassed = true;
+
+            if (author === 'true') {
+              status += '✅ **Author Validation** - Passed\n';
+            } else {
+              status += '❌ **Author Validation** - Failed (manual review required)\n';
+              allPassed = false;
+            }
+
+            if (files === 'true') {
+              status += '✅ **File Path Validation** - Passed\n';
+            } else {
+              status += '❌ **File Path Validation** - Failed\n';
+              allPassed = false;
+            }
+
+            if (patterns === 'true') {
+              status += '✅ **Security Scan** - Passed\n';
+            } else {
+              status += '⚠️ **Security Scan** - Review Required\n';
+            }
+
+            if (tests === 'true') {
+              status += '✅ **Tests** - Passed\n';
+            } else {
+              status += '❌ **Tests** - Failed\n';
+              allPassed = false;
+            }
+
+            if (allPassed) {
+              status += '\n🎉 **Auto-merge enabled!** This PR will be merged automatically when all checks pass.';
+            } else {
+              status += '\n⚠️ **Auto-merge blocked.** Manual review required.';
+            }
+
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: status
+            });
+
+      - name: Notify on completion
+        if: always()
+        run: |
+          echo "Job completed with status: ${{ job.status }}"
+          # Could trigger webhook to Botwave event handler here

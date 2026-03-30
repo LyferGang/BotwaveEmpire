@@ -229,3 +229,20 @@ class PlumbingAgent(BaseAgent):
             "classification": classification["data"],
             "next_steps": ["Generate quote", "Schedule appointment"]
         }, "Conversation processed")
+
+
+if __name__ == "__main__":
+    import logging
+    import time
+    import os
+
+    logging.basicConfig(level=logging.INFO)
+    logger = logging.getLogger("plumbing_agent")
+
+    agent = PlumbingAgent()
+    logger.info(f"Plumbing Agent started - PID {os.getpid()}")
+
+    while True:
+        health = agent.health_check()
+        logger.debug(f"Health check: {health}")
+        time.sleep(30)

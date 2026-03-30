@@ -3,29 +3,71 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Payment Canceled - Botwave</title>
+    <title>Payment Canceled | Botwave</title>
     <style>
+        :root {
+            --primary: #6366f1;
+            --secondary: #8b5cf6;
+            --bg: #0f0f23;
+            --bg-card: #1a1a2e;
+            --text: #ffffff;
+            --text-muted: #94a3b8;
+        }
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #0f0f0f; color: #fff; min-height: 100vh; display: flex; align-items: center; justify-content: center; }
-        .container { text-align: center; padding: 40px; max-width: 500px; }
-        .cancel-icon { width: 80px; height: 80px; background: #6b7280; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 25px; font-size: 40px; }
-        h1 { font-size: 28px; margin-bottom: 15px; }
-        p { color: #888; line-height: 1.6; margin-bottom: 30px; }
-        .btn { background: #3b82f6; color: #fff; text-decoration: none; padding: 14px 32px; border-radius: 8px; font-weight: 500; display: inline-block; transition: all 0.2s; }
-        .btn:hover { background: #2563eb; transform: translateY(-1px); }
-        .btn-outline { background: transparent; border: 1px solid #3b82f6; color: #3b82f6; }
-        .btn-outline:hover { background: #3b82f6; color: #fff; }
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+        }
+        .canceled-card {
+            background: var(--bg-card);
+            border-radius: 1.5rem;
+            padding: 4rem;
+            max-width: 500px;
+            margin: 2rem;
+            border: 1px solid rgba(239, 68, 68, 0.3);
+        }
+        .canceled-icon {
+            font-size: 5rem;
+            margin-bottom: 1.5rem;
+        }
+        h1 {
+            font-size: 2rem;
+            margin-bottom: 1rem;
+            color: #ef4444;
+        }
+        p {
+            color: var(--text-muted);
+            margin-bottom: 2rem;
+            line-height: 1.6;
+        }
+        .btn {
+            display: inline-block;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: white;
+            padding: 1rem 2.5rem;
+            border-radius: 0.75rem;
+            text-decoration: none;
+            font-weight: 600;
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(99, 102, 241, 0.5);
+        }
     </style>
 </head>
 <body>
-    <div class="container">
-        <div class="cancel-icon">✕</div>
+    <div class="canceled-card">
+        <div class="canceled-icon">🚫</div>
         <h1>Payment Canceled</h1>
-        <p>No worries! You haven't been charged. Feel free to browse our plans and come back when you're ready.</p>
-        <div style="display: flex; gap: 10px; justify-content: center;">
-            <a href="/pricing" class="btn">View Plans</a>
-            <a href="/" class="btn btn-outline">Go Home</a>
-        </div>
+        <p>No worries! Your payment was canceled and you weren't charged. You can try again anytime or contact us if you need help.</p>
+        <a href="/pricing" class="btn">Back to Pricing</a>
     </div>
 </body>
 </html>

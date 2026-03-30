@@ -1,0 +1,119 @@
+# Botwave Empire - PR Completion Notifications
+# Sends notifications when agent jobs complete
+# Modeled after thepopebot's notify-pr-complete.yml
+
+name: Notify PR Complete
+
+on:
+  pull_request:
+    types: [closed]
+    branches: [main, master]
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+    if: github.event.pull_request.merged == true && startsWith(github.head_ref, 'agent-job/')
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Extract job info
+        id: job-info
+        run: |
+          BRANCH="${{ github.head_ref }}"
+          PR_TITLE="${{ github.event.pull_request.title }}"
+          PR_BODY="${{ github.event.pull_request.body }}"
+
+          # Parse job ID from branch name (agent-job/YYYYMMDD-HHMMSS-name-XXXXXXXX)
+          JOB_ID=$(echo "$BRANCH" | grep -oE '[a-f0-9]{8}$' || echo "unknown")
+
+          echo "job_id=$JOB_ID" >> $GITHUB_OUTPUT
+          echo "branch=$BRANCH" >> $GITHUB_OUTPUT
+          echo "title=$PR_TITLE" >> $GITHUB_OUTPUT
+
+      - name: Send Telegram notification
+        if: env.TELEGRAM_BOT_TOKEN != '' && env.TELEGRAM_CHAT_ID != ''
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: |
+          MESSAGE="🤖 *Botwave Job Complete*%0A%0A"
+          MESSAGE+="Job: ${{ steps.job-info.outputs.title }}%0A"
+          MESSAGE+="ID: \`${{ steps.job-info.outputs.job_id }}\`%0A"
+          MESSAGE+="Status: ✅ Merged%0A"
+          MESSAGE+="URL: ${{ github.event.pull_request.html_url }}"
+
+          curl -s -X POST "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
+            -d "chat_id=${TELEGRAM_CHAT_ID}" \
+            -d "text=${MESSAGE}" \
+            -d "parse_mode=Markdown" \
+            -d "disable_web_page_preview=true" || echo "Telegram notification failed"
+
+      - name: Send Discord notification
+        if: env.DISCORD_WEBHOOK_URL != ''
+        env:
+          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+        run: |
+          curl -X POST "$DISCORD_WEBHOOK_URL" \
+            -H "Content-Type: application/json" \
+            -d '{
+              "embeds": [{
+                "title": "🤖 Botwave Job Complete",
+                "description": "'"${{ steps.job-info.outputs.title }}"'",
+                "color": 3066993,
+                "fields": [
+                  {"name": "Job ID", "value": "'"${{ steps.job-info.outputs.job_id }}"'", "inline": true},
+                  {"name": "Status", "value": "✅ Merged", "inline": true},
+                  {"name": "Branch", "value": "'"${{ github.head_ref }}"'", "inline": false}
+                ],
+                "timestamp": "'"$(date -u +%Y-%m-%dT%H:%M:%SZ)"'"
+              }]
+            }' || echo "Discord notification failed"
+
+      - name: Send Email notification (optional)
+        if: env.EMAIL_WEBHOOK_URL != ''
+        env:
+          EMAIL_WEBHOOK_URL: ${{ secrets.EMAIL_WEBHOOK_URL }}
+        run: |
+          curl -X POST "$EMAIL_WEBHOOK_URL" \
+            -H "Content-Type: application/json" \
+            -d '{
+              "to": "${{ secrets.NOTIFICATION_EMAIL }}",
+              "subject": "[Botwave] Job Complete: ${{ steps.job-info.outputs.title }}",
+              "body": "Job ID: ${{ steps.job-info.outputs.job_id }}\nStatus: Merged\nURL: ${{ github.event.pull_request.html_url }}"
+            }' || echo "Email notification failed"
+
+      - name: Update job status file
+        run: |
+          JOB_ID="${{ steps.job-info.outputs.job_id }}"
+          mkdir -p agent-jobs/completed
+          echo "${{ github.event.pull_request.merged_at }}" > "agent-jobs/completed/${JOB_ID}.txt"
+          echo "Merged by: ${{ github.event.pull_request.merged_by.login }}" >> "agent-jobs/completed/${JOB_ID}.txt"
+
+      - name: Trigger Botwave event handler
+        if: env.BOTWAVE_WEBHOOK_URL != ''
+        env:
+          BOTWAVE_WEBHOOK_URL: ${{ secrets.BOTWAVE_WEBHOOK_URL }}
+        run: |
+          curl -X POST "$BOTWAVE_WEBHOOK_URL" \
+            -H "Content-Type: application/json" \
+            -H "X-Secret: ${{ secrets.BOTWAVE_WEBHOOK_SECRET }}" \
+            -d '{
+              "event": "job_complete",
+              "job_id": "'"${{ steps.job-info.outputs.job_id }}"'",
+              "pr_number": ${{ github.event.pull_request.number }},
+              "merged_by": "'"${{ github.event.pull_request.merged_by.login }}"'",
+              "merged_at": "'"${{ github.event.pull_request.merged_at }}"'"
+            }' || echo "Botwave webhook not configured"
+
+      - name: Post completion comment
+        uses: actions/github-script@v7
+        with:
+          script: |
+            github.rest.repos.createCommitComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              commit_sha: '${{ github.sha }}',
+              body: '🤖 Botwave agent job completed and merged! Notifications sent.'
+            });
