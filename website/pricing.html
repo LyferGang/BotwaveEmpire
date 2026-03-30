@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pricing | Botwave Empire</title>
+    <meta name="description" content="Flexible pricing for AI-powered business automation">
+    <link rel="stylesheet" href="css/style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        .pricing-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+            margin-top: 3rem;
+        }
+        .pricing-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 1rem;
+            padding: 2rem;
+            position: relative;
+            transition: transform 0.3s, border-color 0.3s;
+        }
+        .pricing-card:hover {
+            transform: translateY(-5px);
+        }
+        .pricing-card.featured {
+            border-color: var(--primary);
+            box-shadow: 0 0 30px rgba(99, 102, 241, 0.2);
+        }
+        .popular-badge {
+            position: absolute;
+            top: -12px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: var(--primary);
+            color: white;
+            padding: 0.25rem 1rem;
+            border-radius: 1rem;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+        .price {
+            font-size: 3rem;
+            font-weight: 700;
+            margin: 1rem 0;
+        }
+        .price span {
+            font-size: 1rem;
+            color: var(--text-muted);
+        }
+        .features-list {
+            list-style: none;
+            margin: 2rem 0;
+        }
+        .features-list li {
+            padding: 0.5rem 0;
+            border-bottom: 1px solid var(--border);
+        }
+        .features-list li:last-child {
+            border-bottom: none;
+        }
+        .features-list li::before {
+            content: "✓ ";
+            color: var(--secondary);
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <div class="container">
+            <div class="logo">Botwave Empire</div>
+            <ul class="nav-links">
+                <li><a href="index.html">Home</a></li>
+                <li><a href="pricing.html">Pricing</a></li>
+                <li><a href="docs.html">Docs</a></li>
+                <li><a href="contact.html">Contact</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <section class="features">
+        <div class="container">
+            <h2>Simple, Transparent Pricing</h2>
+            <p style="text-align: center; color: var(--text-muted); margin-top: 1rem;">Choose the plan that fits your business. No hidden fees.</p>
+
+            <div class="pricing-grid">
+                <!-- Starter -->
+                <div class="pricing-card">
+                    <h3>Starter</h3>
+                    <div class="price">$49<span>/month</span></div>
+                    <p style="color: var(--text-muted);">Perfect for small businesses getting started with automation.</p>
+
+                    <ul class="features-list">
+                        <li>1 Business Agent</li>
+                        <li>500 tasks/month</li>
+                        <li>Email support</li>
+                        <li>SQLite database</li>
+                        <li>Basic analytics</li>
+                    </ul>
+
+                    <a href="contact.html?plan=starter" class="btn-secondary" style="width: 100%; display: block; text-align: center;">Get Started</a>
+                </div>
+
+                <!-- Professional -->
+                <div class="pricing-card featured">
+                    <div class="popular-badge">Most Popular</div>
+                    <h3>Professional</h3>
+                    <div class="price">$149<span>/month</span></div>
+                    <p style="color: var(--text-muted);">For growing businesses that need multiple agents and priority support.</p>
+
+                    <ul class="features-list">
+                        <li>3 Agents (Business, Intelligence, Plumbing)</li>
+                        <li>5,000 tasks/month</li>
+                        <li>Priority support</li>
+                        <li>PostgreSQL database</li>
+                        <li>Advanced analytics</li>
+                        <li>Custom workflows</li>
+                        <li>API access</li>
+                    </ul>
+
+                    <a href="contact.html?plan=professional" class="btn-primary" style="width: 100%; display: block; text-align: center;">Get Started</a>
+                </div>
+
+                <!-- Enterprise -->
+                <div class="pricing-card">
+                    <h3>Enterprise</h3>
+                    <div class="price">Custom</div>
+                    <p style="color: var(--text-muted);">Dedicated infrastructure and custom agent development.</p>
+
+                    <ul class="features-list">
+                        <li>Unlimited agents</li>
+                        <li>Unlimited tasks</li>
+                        <li>24/7 dedicated support</li>
+                        <li>Managed hosting</li>
+                        <li>Custom agent development</li>
+                        <li>SLA guarantee</li>
+                        <li>On-premise deployment</li>
+                    </ul>
+
+                    <a href="contact.html?plan=enterprise" class="btn-secondary" style="width: 100%; display: block; text-align: center;">Contact Sales</a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="get-started" style="background: rgba(99, 102, 241, 0.05);">
+        <div class="container">
+            <h2>Frequently Asked Questions</h2>
+            <div style="max-width: 800px; margin: 3rem auto; text-align: left;">
+                <div style="margin-bottom: 2rem;">
+                    <h3 style="color: var(--primary); margin-bottom: 0.5rem;">Can I self-host?</h3>
+                    <p style="color: var(--text-muted);">Yes! Botwave is open source. You can self-host for free or use our managed service.</p>
+                </div>
+
+                <div style="margin-bottom: 2rem;">
+                    <h3 style="color: var(--primary); margin-bottom: 0.5rem;">What's included in the setup?</h3>
+                    <p style="color: var(--text-muted);">We handle installation, configuration, and training. Professional plans include migration assistance.</p>
+                </div>
+
+                <div style="margin-bottom: 2rem;">
+                    <h3 style="color: var(--primary); margin-bottom: 0.5rem;">Can I build custom agents?</h3>
+                    <p style="color: var(--text-muted);">Absolutely. Our agent framework is extensible. Enterprise plans include custom agent development.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <footer>
+        <div class="container">
+            <p>© 2026 Botwave Empire. Open source under MIT License.</p>
+        </div>
+    </footer>
+</body>
+</html>
