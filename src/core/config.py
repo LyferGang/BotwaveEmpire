@@ -16,12 +16,16 @@ class Config:
     All secrets must be provided via environment - no hardcoded values.
     """
 
-    # LLM Configuration
+    # LLM Configuration - Optimized for Fast Response (LM Studio)
+    # Model: qwen3.5-4b-uncensored-hauhaucs-aggressive (32K context, 4 parallel)
     LLM_API_URL: str = os.getenv("LLM_API_URL", "http://localhost:1234/v1")
-    LLM_API_KEY: Optional[str] = os.getenv("LLM_API_KEY")
-    LLM_MODEL: str = os.getenv("LLM_MODEL", "qwen2.5-7b-instruct")
-    LLM_TEMPERATURE: float = float(os.getenv("LLM_TEMPERATURE", "0.7"))
-    LLM_MAX_TOKENS: int = int(os.getenv("LLM_MAX_TOKENS", "2048"))
+    LLM_API_KEY: Optional[str] = os.getenv("LLM_API_KEY", "lm-studio")
+    LLM_MODEL: str = os.getenv("LLM_MODEL", "qwen3.5-4b-uncensored-hauhaucs-aggressive")
+    LLM_TEMPERATURE: float = float(os.getenv("LLM_TEMPERATURE", "0.3"))  # Lower for consistent responses
+    LLM_MAX_TOKENS: int = int(os.getenv("LLM_MAX_TOKENS", "512"))  # Fast response, short answers
+    LLM_CONTEXT_WINDOW: int = int(os.getenv("LLM_CONTEXT_WINDOW", "8192"))  # Match LM Studio setting
+    LLM_REQUEST_TIMEOUT: int = int(os.getenv("LLM_REQUEST_TIMEOUT", "15"))  # Fast fail, 15 seconds
+    LLM_PARALLEL_REQUESTS: int = int(os.getenv("LLM_PARALLEL_REQUESTS", "4"))  # Match LM Studio
 
     # Database
     DATABASE_URL: str = os.getenv("DATABASE_URL", "sqlite:///data/botwave.db")
