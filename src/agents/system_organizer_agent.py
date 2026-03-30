@@ -105,7 +105,7 @@ class SystemOrganizerAgent(BaseAgent):
         self.logger.info(f"Scanning {self.ssh_host}...")
 
         # Get file inventory
-        scan_script = """
+        scan_script = r"""
         echo "=== SYSTEM SCAN ==="
         echo "Date: $(date)"
         echo "User: $(whoami)"
@@ -189,8 +189,6 @@ class SystemOrganizerAgent(BaseAgent):
         echo "Organized files saved to: $ORG_DIR"
         """
 
-        result = self._ssh_exec(organize_script)
-
         return self._format_success({
             "action": "organize",
             "output": result,
@@ -202,7 +200,7 @@ class SystemOrganizerAgent(BaseAgent):
         """Move suspicious/questionable files to quarantine for review."""
         self.logger.info(f"Quarantining suspicious files on {self.ssh_host}...")
 
-        quarantine_script = f"""
+        quarantine_script = rf"""
         BASE_DIR="$HOME"
         QUAR_DIR="$BASE_DIR/Desktop/{self.quarantine_dir}"
 
@@ -260,8 +258,6 @@ class SystemOrganizerAgent(BaseAgent):
         echo ""
         echo "REVIEW these files with the owner before taking any action!"
         """
-
-        result = self._ssh_exec(quarantine_script)
 
         return self._format_success({
             "action": "quarantine",

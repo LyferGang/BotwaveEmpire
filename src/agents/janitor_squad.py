@@ -209,7 +209,7 @@ class SqueegeeAgent(BaseAgent):
 
     def _full_inventory(self, host: str) -> Dict[str, Any]:
         """Complete file system inventory."""
-        script = """
+        script = r"""
         echo "=== SQUEEGEE FILE INVENTORY ==="
         echo "Started: $(date)"
         echo ""
@@ -296,7 +296,7 @@ class BleachAgent(BaseAgent):
 
     def _security_scan(self, host: str, user: str) -> Dict[str, Any]:
         """Comprehensive security scan."""
-        script = """
+        script = r"""
         echo "=== BLEACH SECURITY SCAN ==="
         echo "Started: $(date)"
         echo ""
@@ -387,7 +387,7 @@ class PipesAgent(BaseAgent):
 
     def _optimize_network(self, host: str, user: str) -> Dict[str, Any]:
         """Optimize network settings."""
-        script = """
+        script = r"""
         echo "=== PIPES NETWORK OPTIMIZATION ==="
         echo "Started: $(date)"
         echo ""
