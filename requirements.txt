@@ -1,15 +1,19 @@
-# Botwave Empire Dependencies
+# Botwave Dependencies
 # Python 3.12+
 
 # Core Framework
 fastapi>=0.104.0
 uvicorn[standard]>=0.24.0
 pydantic>=2.5.0
+pydantic-settings>=2.1.0
 python-multipart>=0.0.6
 
 # HTTP Client
 requests>=2.31.0
 httpx>=0.25.0
+
+# Payments
+stripe>=7.0.0
 
 # Database
 sqlalchemy>=2.0.0
