@@ -1,8 +1,119 @@
-venv/
+# Botwave - Git Ignore
+
+# ============================================
+# SECRETS & CREDENTIALS (Never Commit)
+# ============================================
+.env
+.env.local
+.env.*.local
+vault/secrets.json
+credentials/
+*.key
+*.pem
+*.crt
+keys
+*.pem
+*.crt
+
+# ============================================
+# Python
+# ============================================
 __pycache__/
-*.cap
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+.venv/
+env/
+ENV/
+pip-log.txt
+pip-delete-this-directory.txt
+
+# ============================================
+# IDE
+# ============================================
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# ============================================
+# Logs & Data
+# ============================================
+logs/
 *.log
+data/
+*.db
+*.sqlite
+*.sqlite3
+
+# ============================================
+# Build
+# ============================================
+dist/
+build/
+*.egg-info/
+.eggs/
+
+# ============================================
+# Testing
+# ============================================
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+
+# ============================================
+# Docker
+# ============================================
+docker-compose.override.yml
+
+# ============================================
+# Archive & Temp
+# ============================================
+archive/**/*
+!archive/.gitkeep
+tmp/
+temp/
+*.tmp
+*.bak
+.mcp/context.json
+
+# ============================================
+# OS
+# ============================================
+Thumbs.db
 .DS_Store
 .aider*
-.env
-keys
+
+# ============================================
+# PROPRIETARY CODE (Your Secret Sauce)
+# ============================================
+# Client-specific files
+cleanup_jimenez_plumbing.py
+jimenez_plumbing_cleanup.*
+jps_*
+cleanup_dads_laptop.py
+
+# Core business agents (keep private)
+src/agents/plumbing_agent.py
+src/agents/janitor_squad.py
+src/agents/system_organizer_agent.py
+janitor_service.py
+plumbing/
+Botwave/
+
+# Dashboard templates (your IP)
+dashboard/templates/
+
+# Custom scripts
+commissioning.py
+foreman_dispatch.py
+mainline_monitor.py
+scout_audit.py
+forensic_clean.py
+system_overhaul.py
+squad_registry.py

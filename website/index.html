@@ -3,20 +3,20 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Botwave Empire | AI-Powered Business Automation</title>
-    <meta name="description" content="Botwave Empire - Professional multi-agent automation platform for business operations">
+    <title>Botwave | AI-Powered Business Automation</title>
+    <meta name="description" content="Botwave - Professional multi-agent automation platform for business operations">
     <link rel="stylesheet" href="css/style.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
 </head>
 <body>
     <nav class="navbar">
         <div class="container">
-            <div class="logo">Botwave Empire</div>
+            <div class="logo">Botwave</div>
             <ul class="nav-links">
                 <li><a href="#features">Features</a></li>
                 <li><a href="#agents">Agents</a></li>
                 <li><a href="#docs">Documentation</a></li>
-                <li><a href="https://github.com/LyferGang/BotwaveEmpire" class="btn-secondary">GitHub</a></li>
+                <li><a href="https://github.com/LyferGang/Botwave" class="btn-secondary">GitHub</a></li>
             </ul>
         </div>
     </nav>
@@ -40,7 +40,7 @@
                 <div class="feature-card">
                     <div class="icon">🤖</div>
                     <h3>Multi-Agent System</h3>
-                    <p>Specialized agents for business, plumbing services, and intelligence operations working together seamlessly.</p>
+                    <p>Specialized agents for business operations, service management, and intelligence working together seamlessly.</p>
                 </div>
                 <div class="feature-card">
                     <div class="icon">🏗️</div>
@@ -54,8 +54,8 @@
                 </div>
                 <div class="feature-card">
                     <div class="icon">⚡</div>
-                    <h3>Git MCP Integration</h3>
-                    <p>Model Context Protocol server for Git-based agent coordination and version control.</p>
+                    <h3>Real-Time Dashboard</h3>
+                    <p>Modern web interface for monitoring agents, executing tasks, and viewing live logs.</p>
                 </div>
             </div>
         </div>
@@ -79,10 +79,10 @@
                 </div>
                 <div class="agent-card">
                     <div class="agent-header">
-                        <h3>Plumbing Agent</h3>
+                        <h3>Service Agent</h3>
                         <span class="badge">Ready</span>
                     </div>
-                    <p>Service business automation for plumbing companies.</p>
+                    <p>Generic service business automation for quotes and customer management.</p>
                     <ul>
                         <li>Issue classification</li>
                         <li>Quote generation</li>
@@ -101,6 +101,18 @@
                         <li>Content generation</li>
                     </ul>
                 </div>
+                <div class="agent-card">
+                    <div class="agent-header">
+                        <h3>Janitor Squad</h3>
+                        <span class="badge">Premium</span>
+                    </div>
+                    <p>Five specialized agents for complete system overhaul and optimization.</p>
+                    <ul>
+                        <li>Security scanning</li>
+                        <li>Performance tuning</li>
+                        <li>Professional reports</li>
+                    </ul>
+                </div>
             </div>
         </div>
     </section>
@@ -110,27 +122,28 @@
             <h2>Get Started</h2>
             <div class="code-block">
                 <pre><code># Clone the repository
-git clone https://github.com/LyferGang/BotwaveEmpire.git
-cd BotwaveEmpire
+git clone https://github.com/LyferGang/Botwave.git
+cd Botwave
 
-# Configure environment
-cp .env.example .env
-# Edit .env with your settings
+# Install dependencies
+pip install -r requirements.txt
 
-# Start with Docker
-docker-compose up -d
+# Configure secrets
+cp vault/secrets.json.example vault/secrets.json
 
-# Verify deployment
-curl http://localhost:8080/health</code></pre>
+# Start the dashboard
+./start.sh
+
+# Access at http://localhost:5000</code></pre>
             </div>
         </div>
     </section>
 
     <footer>
         <div class="container">
-            <p>© 2026 Botwave Empire. Open source under MIT License.</p>
+            <p>© 2026 Botwave. Open source under MIT License.</p>
             <div class="footer-links">
-                <a href="https://github.com/LyferGang/BotwaveEmpire">GitHub</a>
+                <a href="https://github.com/LyferGang/Botwave">GitHub</a>
                 <a href="/docs">Documentation</a>
             </div>
         </div>

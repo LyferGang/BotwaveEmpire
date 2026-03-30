@@ -4,7 +4,7 @@ Business-focused agent implementations
 """
 
 from .business_agent import BusinessAgent
-from .plumbing_agent import PlumbingAgent
+from .service_agent import ServiceAgent
 from .intelligence_agent import IntelligenceAgent
 
-__all__ = ["BusinessAgent", "PlumbingAgent", "IntelligenceAgent"]
+__all__ = ["BusinessAgent", "ServiceAgent", "IntelligenceAgent"]

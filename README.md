@@ -1,142 +1,117 @@
-# Botwave Empire
+# Botwave
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Docker](https://img.shields.io/badge/Docker-Ready-blue.svg)](https://docker.com)
-[![Tests](https://img.shields.io/badge/Tests-Passing-green.svg)]()
+> Professional AI automation platform for service businesses.
 
-A professional, self-contained multi-agent automation platform for business operations.
+[![Python 3.12+](https://img.shields.io/badge/python-3.12+-blue.svg)](https://python.org)
+[![Local LLM](https://img.shields.io/badge/LLM-LM%20Studio-green.svg)](https://lmstudio.ai)
+
+## Overview
+
+Botwave is a production-ready multi-agent automation platform designed for service businesses that need intelligent systems running 24/7.
+
+**What it demonstrates:**
+- Enterprise-grade agent architecture
+- Real-time web dashboard with live updates
+- Local LLM integration (zero API costs)
+- Professional secrets management
+- Docker-native deployment
+
+## Quick Look
+
+```bash
+# Start the platform
+./start.sh
+
+# Dashboard: http://localhost:5000
+# API: http://localhost:8080/docs
+```
+
+## Features
+
+| Feature | Description |
+|---------|-------------|
+| **Web Dashboard** | Real-time agent monitoring, task execution, live logs |
+| **Multi-Agent System** | Specialized agents for different business functions |
+| **Local LLM** | Runs on your hardware with LM Studio - no data leaves your network |
+| **Secrets Vault** | Professional credential management with access control |
+| **REST API** | Full API for integrations, webhooks, and automation |
+| **Docker Ready** | Containerized for easy deployment and scaling |
 
 ## Architecture
 
-Botwave follows a two-layer architecture inspired by modern agent frameworks:
-
 ```
-┌─────────────────────────────────────────────────────────────────┐
-│  EVENT HANDLER (API Server)                                     │
-│  ├── REST API / Webhooks                                         │
-│  ├── Job Queue Management                                        │
-│  ├── Git MCP Server Integration                                 │
-│  └── Triggers Docker Agents                                     │
-├─────────────────────────────────────────────────────────────────┤
-│  DOCKER AGENTS (Isolated Execution)                             │
-│  ├── Business Agent - Financial/operational audits               │
-│  ├── Intelligence Agent - LLM-powered analysis                 │
-│  ├── Plumbing Agent - Service business automation                │
-│  └── Task Executor - Generic task runner                       │
-└─────────────────────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────┐
+│           WEB DASHBOARD                     │
+│     Real-time monitoring & control          │
+└─────────────────────────────────────────────┘
+                    │
+                    ▼
+┌─────────────────────────────────────────────┐
+│             API SERVER                      │
+│         REST endpoints & webhooks           │
+└─────────────────────────────────────────────┘
+                    │
+    ┌───────────────┼───────────────┐
+    ▼               ▼               ▼
+┌─────────┐   ┌──────────┐   ┌──────────┐
+│Business │   │ Service  │   │Intelligence│
+│ Agent   │   │  Agent   │   │   Agent   │
+└─────────┘   └──────────┘   └──────────┘
 ```
 
-## Quick Start
-
-### Prerequisites
-
-- Docker Engine 24.0+
-- Docker Compose 2.20+
-- Git 2.40+
-
-### Installation
+## Installation
 
 ```bash
-# Clone the repository
-git clone https://github.com/LyferGang/BotwaveEmpire.git
-cd BotwaveEmpire
+# Clone
+git clone https://github.com/LyferGang/Botwave.git
+cd Botwave
 
-# Configure environment
-cp config/.env.example config/.env
-# Edit config/.env with your settings
+# Install dependencies
+pip install -r requirements.txt
 
-# Start the system
-docker-compose up -d
+# Configure secrets
+cp vault/secrets.json.example vault/secrets.json
+# Edit vault/secrets.json with your LM Studio URL
 
-# Verify health
-curl http://localhost:8080/health
+# Start
+./start.sh
 ```
-
-## Directory Structure
-
-```
-.
-├── config/              # Configuration files
-│   ├── agents/          # Agent-specific settings
-│   ├── skills/          # Skill configurations
-│   └── .env.example     # Environment template
-├── docker/              # Docker configurations
-│   ├── agent/           # Agent container
-│   └── api/             # API server container
-├── src/                 # Source code
-│   ├── agents/          # Agent implementations
-│   ├── core/            # Core framework
-│   ├── skills/          # Agent skills
-│   └── api/             # REST API
-├── .github/workflows/   # CI/CD pipelines
-├── tests/               # Test suite
-└── docs/                # Documentation
-```
-
-## Agents
-
-| Agent | Purpose | Trigger |
-|-------|---------|---------|
-| `business` | Financial audits, compliance reports | API / Schedule |
-| `plumbing` | Service quotes, customer management | API / Webhook |
-| `intelligence` | LLM analysis, data processing | API / Event |
-| `executor` | Generic task runner | All triggers |
-
-## Skills
-
-Skills extend agent capabilities:
-
-- `database` - SQLite/PostgreSQL operations
-- `llm` - Local LLM integration (LM Studio/Ollama)
-- `web` - HTTP requests, webhooks
-- `files` - File processing, archiving
 
 ## Configuration
 
-All configuration is environment-driven:
+All secrets stored in `vault/secrets.json` (gitignored):
 
-```bash
-# Required
-LLM_API_URL=http://localhost:1234/v1
-LLM_API_KEY=your-key
-DATABASE_URL=sqlite:///data/botwave.db
-
-# Optional
-LOG_LEVEL=INFO
-AGENT_TIMEOUT=300
+```json
+{
+  "llm": {
+    "local": {
+      "api_url": "http://your-lm-studio:1234/v1",
+      "model": "qwen3.5-4b-uncensored-hauhaucs-aggressive"
+    }
+  }
+}
 ```
 
-## API Endpoints
+## Tech Stack
 
-| Endpoint | Method | Description |
-|----------|--------|-------------|
-| `/health` | GET | Health check |
-| `/agents` | GET | List agents |
-| `/agents/{name}/run` | POST | Trigger agent |
-| `/jobs` | GET | List jobs |
-| `/jobs/{id}` | GET | Job status |
-
-## Development
-
-```bash
-# Run tests
-docker-compose -f docker-compose.test.yml run --rm test
-
-# Lint code
-flake8 src/
-black src/
-
-# Type check
-mypy src/
-```
+- **Backend:** Python 3.12, FastAPI, Flask, SocketIO
+- **Frontend:** Modern HTML5/CSS3, JavaScript
+- **AI:** LM Studio (local), OpenRouter, Gemini, xAI
+- **Database:** SQLite (portable), PostgreSQL-ready
+- **Deployment:** Docker, Docker Compose
 
 ## Security
 
-- All secrets via environment variables
-- No hardcoded credentials
-- Container isolation
-- Secret filtering in logs
+- Secrets never committed to git
+- Agent-specific access control
+- Non-root Docker containers
+- Fail-closed validation
 
 ## License
 
-MIT License - See [LICENSE](LICENSE)
+MIT License
+
+---
+
+**Botwave** - Professional AI Automation
+*Built for businesses that need reliable, private automation.*
