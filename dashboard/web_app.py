@@ -1,8 +1,7 @@
 #!/usr/bin/env python3
 """
-Botwave Empire - Web Dashboard
+Botwave - Web Dashboard
 Professional interactive web GUI for agent management with Stripe payments
-Contact: Kyle Jimenez - botwave1904@gmail.com
 """
 
 import os

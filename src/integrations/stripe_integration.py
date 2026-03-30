@@ -1,8 +1,6 @@
 """
 Stripe Integration for Botwave Business Platform
 Handles payments, subscriptions, and invoicing for service business automation.
-
-Contact: Kyle Jimenez - botwave1904@gmail.com
 """
 
 import os
